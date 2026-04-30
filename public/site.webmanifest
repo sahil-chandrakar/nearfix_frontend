@@ -1,0 +1,21 @@
+{
+  "name": "NearFix",
+  "short_name": "NearFix",
+  "description": "Find and book trusted local service professionals with NearFix.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5fbfd",
+  "theme_color": "#f9a21a",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
