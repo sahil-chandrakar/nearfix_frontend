@@ -8,6 +8,7 @@ import {
   PrimaryButton,
   TextField,
 } from "@/components/auth/marketplace-auth";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
 import { loginAdmin } from "@/services/admin-service";
@@ -15,6 +16,7 @@ import { getCurrentUser } from "@/services/auth-service";
 import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const { isReady, setToken, token } = useAuthToken();
   const [phone, setPhone] = useState("");
@@ -56,7 +58,7 @@ export default function AdminLoginPage() {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to login as admin.",
+          : t("auth.adminLogin"),
       );
     } finally {
       setIsSubmitting(false);
@@ -64,10 +66,10 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <AuthPage subtitle="NearFix Admin">
+    <AuthPage subtitle={t("auth.adminLoginSubtitle")}>
       <AuthCard
-        description="Use your admin phone number and password to manage approvals, services, banners, and activity."
-        title="Admin Login"
+        description={t("auth.adminLoginDescription")}
+        title={t("auth.adminLogin")}
       >
         {error ? (
           <p className="mb-5 rounded-lg bg-red-50 px-4 py-3 text-[14px] leading-5 text-red-600">
@@ -78,27 +80,27 @@ export default function AdminLoginPage() {
           <FieldStack>
             <TextField
               inputMode="numeric"
-              label="Admin Phone Number"
+              label={t("auth.adminPhoneNumber")}
               maxLength={10}
               onChange={(event) => setPhone(event.target.value)}
               pattern="[0-9]{10}"
-              placeholder="10-digit mobile number"
+              placeholder={t("auth.phonePlaceholder")}
               required
               type="tel"
               value={phone}
             />
             <TextField
               autoComplete="current-password"
-              label="Password"
+              label={t("common.password")}
               minLength={8}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter password"
+              placeholder={t("auth.enterPassword")}
               required
               type="password"
               value={password}
             />
             <PrimaryButton disabled={isSubmitting} type="submit">
-              {isSubmitting ? "Logging in..." : "Login to Admin"}
+              {isSubmitting ? t("auth.loggingIn") : t("auth.loginToAdmin")}
             </PrimaryButton>
           </FieldStack>
         </form>

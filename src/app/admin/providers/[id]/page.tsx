@@ -11,11 +11,13 @@ import {
   AdminStatusBadge,
   formatAdminDate,
 } from "@/components/admin/admin-shell";
+import { ResetPasswordModal } from "@/components/admin/reset-password-modal";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
 import {
   fetchAdminBlobUrl,
   getAdminProvider,
+  resetAdminUserPassword,
   updateAdminUserActive,
   updateAdminProviderStatus,
 } from "@/services/admin-service";
@@ -35,6 +37,8 @@ export default function AdminProviderDetailPage() {
   const [provider, setProvider] = useState<AdminProvider | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
     if (!token || !providerId) {
@@ -105,6 +109,21 @@ export default function AdminProviderDetailPage() {
           ? caughtError.message
           : "Unable to update provider account.",
       );
+    }
+  }
+
+  async function handlePasswordReset(newPassword: string) {
+    if (!token || !provider) {
+      return;
+    }
+    setIsResettingPassword(true);
+    try {
+      await resetAdminUserPassword(token, provider.userId, newPassword);
+      setMessage(`Password reset for ${provider.shopCompanyName}.`);
+      setError("");
+      setIsResetPasswordOpen(false);
+    } finally {
+      setIsResettingPassword(false);
     }
   }
 
@@ -209,6 +228,12 @@ export default function AdminProviderDetailPage() {
               >
                 {provider.userIsActive ? "Suspend Account" : "Restore Account"}
               </AdminButton>
+              <AdminButton
+                onClick={() => setIsResetPasswordOpen(true)}
+                tone="secondary"
+              >
+                Reset Password
+              </AdminButton>
             </div>
           </AdminCard>
 
@@ -250,6 +275,14 @@ export default function AdminProviderDetailPage() {
           </div>
         </div>
       )}
+
+      <ResetPasswordModal
+        isOpen={isResetPasswordOpen}
+        isSubmitting={isResettingPassword}
+        onClose={() => setIsResetPasswordOpen(false)}
+        onSubmit={handlePasswordReset}
+        targetLabel={provider?.shopCompanyName ?? "this provider"}
+      />
     </AdminShell>
   );
 }

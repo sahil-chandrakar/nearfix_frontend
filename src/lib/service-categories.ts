@@ -5,7 +5,9 @@ export type ServiceCategory = {
     | "Home Repairs & Maintenance"
     | "Other Services";
   label: string;
+  labelHi?: string;
   slug: string;
+  groupHi?: string;
 };
 
 export type PersonalCareAudience = {
@@ -221,3 +223,59 @@ export const brandServices = [
   "Hero & Honda Bike Service",
   "Hero & Honda Bike Service",
 ] as const;
+
+export const groupHindiLabels: Record<string, string> = {
+  "Cleaning & Handyman": "सफाई और मरम्मत",
+  "Home Repairs & Maintenance": "घर की मरम्मत",
+  "Other Services": "अन्य सेवाएं",
+  "Personal Care": "पर्सनल केयर",
+};
+
+export const serviceHindiLabels: Record<string, string> = {
+  "ac-fridge-service": "AC/फ्रिज सेवा",
+  "battery-servicing": "बैटरी सर्विसिंग",
+  "bike-mechanic": "बाइक मैकेनिक",
+  "camera-servicing": "कैमरा सर्विसिंग",
+  "car-bike-wash": "कार/बाइक वॉश",
+  "car-mechanic": "कार मैकेनिक",
+  "carpenter-service": "कारपेंटर सेवा",
+  "cctv-servicing": "CCTV सर्विसिंग",
+  "computer-service": "कंप्यूटर सेवा",
+  "computer-training": "कंप्यूटर ट्रेनिंग",
+  "e-rickshaw-mechanic": "ई-रिक्शा मैकेनिक",
+  "electrician": "इलेक्ट्रीशियन",
+  "electronic-mechanic": "इलेक्ट्रॉनिक मैकेनिक",
+  "gas-stove-service": "गैस स्टोव सेवा",
+  "hair-care": "हेयर केयर",
+  "home-tutors": "होम ट्यूटर",
+  "house-cleaning": "घर की सफाई",
+  "laundry-dry-cleaning": "लॉन्ड्री और ड्राई क्लीनिंग",
+  "makeup-services": "मेकअप सेवा",
+  "mehndi-services": "मेहंदी सेवा",
+  "mens-grooming": "मेन्स ग्रूमिंग",
+  "mobile-servicing": "मोबाइल सर्विसिंग",
+  "other-services": "अन्य सेवाएं",
+  "packers-movers": "पैकर्स और मूवर्स",
+  "painter-service": "पेंटर सेवा",
+  "pest-control": "पेस्ट कंट्रोल",
+  "plumber": "प्लंबर",
+  "printer-servicing": "प्रिंटर सर्विसिंग",
+  "ro-servicing": "RO सर्विसिंग",
+  "salon-at-home": "घर पर सैलून",
+  "second-hand-device": "सेकंड हैंड डिवाइस",
+  "skincare-advanced-treatments": "स्किन केयर ट्रीटमेंट",
+  "spa-at-home": "घर पर स्पा",
+  "spa-massage-at-home": "घर पर स्पा और मसाज",
+  "water-tank-cleaning": "पानी टंकी सफाई",
+};
+
+export const personalCareServiceDescriptionsHi: Record<string, string> = {
+  "hair-care": "हेयर स्पा, केराटिन, कलरिंग",
+  "makeup-services": "पार्टी, ब्राइडल मेकअप",
+  "mehndi-services": "ब्राइडल, फेस्टिव, टैटू",
+  "mens-grooming": "हेयरकट, शेव, फेस क्लीनअप",
+  "salon-at-home": "वैक्सिंग, फेशियल, क्लीनअप",
+  "skincare-advanced-treatments": "एडवांस फेशियल, डी-टैन",
+  "spa-at-home": "बॉडी मसाज, रिलैक्सेशन",
+  "spa-massage-at-home": "बॉडी मसाज, रिलैक्सेशन सेवा",
+};

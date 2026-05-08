@@ -11,12 +11,14 @@ import {
   PrimaryButton,
   TextField,
 } from "@/components/auth/marketplace-auth";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
 import { registerCustomer } from "@/services/auth-service";
 import { useRouter } from "next/navigation";
 
 export default function CustomerRegisterPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const { clearToken } = useAuthToken();
   const [name, setName] = useState("");
@@ -38,7 +40,7 @@ export default function CustomerRegisterPage() {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to create your account right now. Please try again.",
+          : t("auth.createAccount"),
       );
     } finally {
       setIsSubmitting(false);
@@ -47,40 +49,40 @@ export default function CustomerRegisterPage() {
 
   return (
     <AuthRedirectGuard>
-      <AuthPage subtitle="Customer Registration">
+      <AuthPage subtitle={t("auth.customerRegistration")}>
         <AuthCard
-          description="Create your account to book trusted local services."
-          title="Customer Register"
+          description={t("auth.customerRegisterDescription")}
+          title={t("auth.customerRegister")}
         >
           <form onSubmit={handleSubmit}>
             <FieldStack>
               <TextField
                 autoComplete="name"
-                label="Name"
+                label={t("common.name")}
                 minLength={2}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Enter your full name"
+                placeholder={t("auth.enterFullName")}
                 required
                 value={name}
               />
               <TextField
                 autoComplete="tel"
                 inputMode="numeric"
-                label="Mobile Number"
+                label={t("common.mobileNumber")}
                 maxLength={10}
                 onChange={(event) => setPhone(event.target.value)}
                 pattern="[0-9]{10}"
-                placeholder="10-digit mobile number"
+                placeholder={t("auth.phonePlaceholder")}
                 required
                 type="tel"
                 value={phone}
               />
               <TextField
                 autoComplete="new-password"
-                label="Password"
+                label={t("common.password")}
                 minLength={8}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Create your password"
+                placeholder={t("auth.createPassword")}
                 required
                 type="password"
                 value={password}
@@ -89,14 +91,14 @@ export default function CustomerRegisterPage() {
                 <p className="text-[14px] leading-5 text-red-600">{error}</p>
               ) : null}
               <PrimaryButton disabled={isSubmitting} type="submit">
-                {isSubmitting ? "Creating..." : "Create Account"}
+                {isSubmitting ? t("auth.creating") : t("auth.createAccount")}
               </PrimaryButton>
             </FieldStack>
           </form>
 
           <p className="mt-6 text-center text-[16px] leading-7 tracking-normal text-[#6d737c]">
-            Already registered?{" "}
-            <AuthLink href="/customer/login">Login</AuthLink>
+            {t("auth.alreadyRegistered")}{" "}
+            <AuthLink href="/customer/login">{t("common.login")}</AuthLink>
           </p>
         </AuthCard>
       </AuthPage>

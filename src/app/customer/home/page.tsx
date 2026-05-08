@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CustomerShell } from "@/components/customer/customer-shell";
 import { ServiceIcon } from "@/components/customer/service-icon";
+import { useI18n } from "@/components/i18n/language-provider";
+import { SUPPORT_CONTACT } from "@/config/support";
 import { apiUrl } from "@/lib/api-url";
+import { categoryGroupLabel, categoryLabel } from "@/lib/localized-labels";
 import {
   brandServices,
   homeCategoryGroups,
@@ -15,7 +18,9 @@ import { getCategories, getCustomerBanners } from "@/services/auth-service";
 
 type CustomerService = {
   group: string;
+  groupHi?: string;
   label: string;
+  labelHi?: string;
   slug: string;
 };
 
@@ -62,6 +67,7 @@ const fallbackBanners = [
 ];
 
 export default function CustomerHomePage() {
+  const { language, t } = useI18n();
   const [query, setQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [availableCategories, setAvailableCategories] =
@@ -74,9 +80,9 @@ export default function CustomerHomePage() {
     }
 
     return availableCategories.filter((category) =>
-      category.label.toLowerCase().includes(normalizedQuery),
+      categoryLabel(category, language).toLowerCase().includes(normalizedQuery),
     );
-  }, [availableCategories, normalizedQuery]);
+  }, [availableCategories, language, normalizedQuery]);
 
   useEffect(() => {
     let isMounted = true;
@@ -113,9 +119,13 @@ export default function CustomerHomePage() {
   }, []);
 
   useEffect(() => {
+    if (banners.length <= 1) {
+      return;
+    }
+
     const intervalId = window.setInterval(() => {
       setActiveBannerIndex((currentIndex) => (currentIndex + 1) % banners.length);
-    }, 2000);
+    }, 1500);
 
     return () => window.clearInterval(intervalId);
   }, [banners.length]);
@@ -128,7 +138,7 @@ export default function CustomerHomePage() {
           <input
             className="h-full min-w-0 flex-1 bg-transparent text-[18px] font-normal tracking-normal text-black outline-none placeholder:text-[#8f9499] sm:text-[21px]"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search services..."
+            placeholder={t("customer.searchServices")}
             type="search"
             value={query}
           />
@@ -144,7 +154,7 @@ export default function CustomerHomePage() {
           >
             {banners.map((banner) => (
               <div
-                className="relative aspect-[2.38/1] min-w-full overflow-hidden bg-slate-700"
+                className="relative h-[184px] min-w-full overflow-hidden bg-slate-700 sm:h-[214px] md:h-[252px]"
                 key={banner.src}
               >
                 <img
@@ -160,11 +170,11 @@ export default function CustomerHomePage() {
         {normalizedQuery ? (
           <section className="mt-12">
             <h1 className="text-[26px] font-extrabold leading-tight tracking-normal text-black sm:text-[30px] md:text-[35px]">
-              Services
+              {t("common.services")}
             </h1>
             {filteredCategories.length === 0 ? (
               <p className="mt-5 text-[16px] leading-7 tracking-normal text-[#6d737c]">
-                No services found.
+                {t("customer.noServicesFound")}
               </p>
             ) : (
               <div className="mt-8 grid grid-cols-4 gap-x-4 gap-y-10 md:grid-cols-6 md:gap-x-8">
@@ -178,7 +188,7 @@ export default function CustomerHomePage() {
                       <ServiceIcon className="h-8 w-8 sm:h-[34px] sm:w-[34px]" slug={category.slug} />
                     </span>
                     <span className="mt-3 text-[13px] font-semibold leading-5 tracking-normal sm:mt-4 sm:text-[15px]">
-                      {category.label}
+                      {categoryLabel(category, language)}
                     </span>
                   </Link>
                 ))}
@@ -189,7 +199,7 @@ export default function CustomerHomePage() {
           <>
             <section className="mt-12">
               <h1 className="text-[26px] font-extrabold leading-tight tracking-normal text-black sm:text-[30px] md:text-[35px]">
-                Personal Care
+                {t("customer.personalCare")}
               </h1>
               <div className="mt-8 grid grid-cols-4 gap-x-4 gap-y-10 md:grid-cols-6 md:gap-x-8">
                 {personalCareAudiences.map((audience) => (
@@ -202,7 +212,7 @@ export default function CustomerHomePage() {
                       <ServiceIcon className="h-8 w-8 sm:h-[34px] sm:w-[34px]" slug={audience.slug} />
                     </span>
                     <span className="mt-3 text-[13px] font-semibold leading-5 tracking-normal sm:mt-4 sm:text-[15px]">
-                      {audience.label}
+                      {language === "hi" ? (audience.slug === "male" ? "पुरुष" : "महिला") : audience.label}
                     </span>
                   </Link>
                 ))}
@@ -219,7 +229,9 @@ export default function CustomerHomePage() {
                       ...categories,
                       {
                         group,
+                        groupHi: "अन्य सेवाएं",
                         label: "Other Services",
+                        labelHi: "अन्य सेवाएं",
                         slug: "other-services",
                       },
                     ]
@@ -228,7 +240,7 @@ export default function CustomerHomePage() {
               return (
                 <section className="mt-12" key={group}>
                   <h1 className="text-[26px] font-extrabold leading-tight tracking-normal text-black sm:text-[30px] md:text-[35px]">
-                    {group}
+                    {categoryGroupLabel(group, language)}
                   </h1>
                   <div className="mt-8 grid grid-cols-4 gap-x-4 gap-y-10 md:grid-cols-6 md:gap-x-8">
                     {homeTiles.map((category) => (
@@ -245,7 +257,7 @@ export default function CustomerHomePage() {
                           <ServiceIcon className="h-8 w-8 sm:h-[34px] sm:w-[34px]" slug={category.slug} />
                         </span>
                         <span className="mt-3 text-[13px] font-semibold leading-5 tracking-normal sm:mt-4 sm:text-[15px]">
-                          {category.label}
+                          {categoryLabel(category, language)}
                         </span>
                       </Link>
                     ))}
@@ -258,7 +270,7 @@ export default function CustomerHomePage() {
 
         <section className="mt-12">
           <h1 className="text-[26px] font-extrabold leading-tight tracking-normal text-black sm:text-[30px] md:text-[35px]">
-            All Brand Services
+            {t("customer.allBrandServices")}
           </h1>
           <div className="mt-7 flex flex-col gap-4 sm:gap-5">
             {brandServices.map((service, index) => (
@@ -277,8 +289,8 @@ export default function CustomerHomePage() {
 
         <footer className="py-10 text-center text-[16px] leading-8 tracking-normal text-[#b6bdc5] sm:py-12 sm:text-[18px]">
           <p>Nearfix.in</p>
-          <p className="mt-5">Helpline: 7970054811</p>
-          <p>Email: nearfix12132550@gmail.com</p>
+          <p className="mt-5">{language === "hi" ? "हेल्पलाइन" : "Helpline"}: {SUPPORT_CONTACT.adminPhone}</p>
+          <p>{t("common.email")}: {SUPPORT_CONTACT.email}</p>
         </footer>
       </div>
     </CustomerShell>

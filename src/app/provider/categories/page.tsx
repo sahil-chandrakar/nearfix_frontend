@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { AuthCard, AuthPage, PrimaryButton } from "@/components/auth/marketplace-auth";
 import { ServiceIcon } from "@/components/customer/service-icon";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
+import { categoryGroupLabel, categoryLabel } from "@/lib/localized-labels";
 import {
   categoryGroups,
   serviceCategories,
@@ -18,6 +20,7 @@ import type { ApiServiceCategory } from "@/types/auth";
 import { useRouter } from "next/navigation";
 
 export default function ProviderCategoriesPage() {
+  const { language, t } = useI18n();
   const router = useRouter();
   const { isReady, token } = useAuthToken();
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
@@ -60,7 +63,7 @@ export default function ProviderCategoriesPage() {
           setError(
             caughtError instanceof ApiError
               ? caughtError.message
-              : "Unable to load categories.",
+              : t("provider.loadingCategories"),
           );
         }
       })
@@ -73,7 +76,7 @@ export default function ProviderCategoriesPage() {
     return () => {
       isMounted = false;
     };
-  }, [isReady, router, token]);
+  }, [isReady, router, t, token]);
 
   function toggleCategory(slug: string) {
     setSelectedSlugs((currentSlugs) =>
@@ -96,13 +99,13 @@ export default function ProviderCategoriesPage() {
     try {
       const categories = await saveProviderCategories(token, selectedSlugs);
       setSelectedSlugs(categories.categorySlugs);
-      setMessage("Categories saved.");
+      setMessage(t("provider.categoriesSaved"));
       router.push("/provider/dashboard");
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to save categories.",
+          : t("provider.saveCategories"),
       );
     } finally {
       setIsSubmitting(false);
@@ -110,14 +113,14 @@ export default function ProviderCategoriesPage() {
   }
 
   return (
-    <AuthPage subtitle="Service Category Selection">
+    <AuthPage subtitle={t("provider.categorySelection")}>
       <AuthCard
-        description="Select every service your shop provides. Customers will find your shop from these categories after approval."
-        title="Your Services"
+        description={t("provider.categorySelectionDescription")}
+        title={t("provider.yourServices")}
       >
         {isLoading ? (
           <p className="text-[16px] leading-7 text-[#6d737c]">
-            Loading categories...
+            {t("provider.loadingCategories")}
           </p>
         ) : null}
 
@@ -133,7 +136,7 @@ export default function ProviderCategoriesPage() {
           {categoryGroups.map((group) => (
             <section key={group}>
               <h2 className="text-[19px] font-extrabold tracking-normal text-black sm:text-[21px]">
-                {group}
+                {categoryGroupLabel(group, language)}
               </h2>
               <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-5 sm:gap-4 md:grid-cols-3">
                 {(availableCategories.length > 0
@@ -159,7 +162,7 @@ export default function ProviderCategoriesPage() {
                           <ServiceIcon className="h-7 w-7 sm:h-8 sm:w-8" slug={category.slug} />
                         </span>
                         <span className="mt-2 text-[13px] font-semibold leading-5 tracking-normal text-[#2f3338] sm:mt-3 sm:text-[14px]">
-                          {category.label}
+                          {categoryLabel(category, language)}
                         </span>
                       </button>
                     );
@@ -171,7 +174,7 @@ export default function ProviderCategoriesPage() {
 
         <div className="mt-8">
           <PrimaryButton disabled={isSubmitting} onClick={handleSave}>
-            {isSubmitting ? "Saving..." : "Save Categories"}
+            {isSubmitting ? t("common.saving") : t("provider.saveCategories")}
           </PrimaryButton>
         </div>
       </AuthCard>

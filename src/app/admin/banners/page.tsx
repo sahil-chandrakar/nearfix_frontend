@@ -27,7 +27,8 @@ export default function AdminBannersPage() {
   const [previewUrls, setPreviewUrls] = useState<Record<number, string>>({});
   const [bannerLimit, setBannerLimit] = useState(2);
   const [altText, setAltText] = useState("NearFix banner");
-  const [image, setImage] = useState<File | null>(null);
+  const [images, setImages] = useState<File[]>([]);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -80,25 +81,32 @@ export default function AdminBannersPage() {
   }, [token]);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    setImage(event.target.files?.[0] ?? null);
+    setImages(Array.from(event.target.files ?? []));
   }
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!token || !image) {
-      setError("Choose a banner image first.");
+    if (!token || images.length === 0) {
+      setError("Choose at least one banner image first.");
       return;
     }
-    const formData = new FormData();
-    formData.append("image", image);
-    formData.append("altText", altText);
     setIsUploading(true);
     setError("");
     try {
-      await createAdminBanner(token, formData);
-      setImage(null);
+      for (const image of images) {
+        const formData = new FormData();
+        formData.append("image", image);
+        formData.append("altText", altText);
+        await createAdminBanner(token, formData);
+      }
+      setImages([]);
+      setFileInputKey((current) => current + 1);
       setAltText("NearFix banner");
-      setMessage("Banner uploaded.");
+      setMessage(
+        images.length === 1
+          ? "Banner uploaded."
+          : `${images.length} banners uploaded.`,
+      );
       loadBanners();
     } catch (caughtError) {
       setError(
@@ -183,7 +191,7 @@ export default function AdminBannersPage() {
       <div className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
         <div className="grid gap-5">
           <AdminCard>
-            <h2 className="text-[20px] font-extrabold text-black">Upload Banner</h2>
+            <h2 className="text-[20px] font-extrabold text-black">Upload Banners</h2>
             <form className="mt-4 grid gap-4" onSubmit={handleCreate}>
               <label className="text-[14px] font-semibold text-[#2f3338]">
                 Alt text
@@ -194,16 +202,23 @@ export default function AdminBannersPage() {
                 />
               </label>
               <label className="text-[14px] font-semibold text-[#2f3338]">
-                Image
+                Images
                 <input
                   accept="image/jpeg,image/png,image/webp"
                   className="mt-2 block w-full text-[14px] text-[#6d737c]"
+                  key={fileInputKey}
+                  multiple
                   onChange={handleFileChange}
                   type="file"
                 />
               </label>
+              {images.length > 0 ? (
+                <p className="text-[13px] font-medium text-[#6d737c]">
+                  {images.length} file{images.length === 1 ? "" : "s"} selected
+                </p>
+              ) : null}
               <AdminButton disabled={isUploading} type="submit">
-                {isUploading ? "Uploading..." : "Upload Banner"}
+                {isUploading ? "Uploading..." : "Upload Banners"}
               </AdminButton>
             </form>
           </AdminCard>

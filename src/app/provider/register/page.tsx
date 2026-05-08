@@ -12,6 +12,7 @@ import {
   PrimaryButton,
   TextField,
 } from "@/components/auth/marketplace-auth";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
 import { registerProvider } from "@/services/auth-service";
@@ -36,6 +37,7 @@ function LocationIcon() {
 }
 
 export default function ProviderRegisterPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const { clearToken } = useAuthToken();
   const [shopCompanyName, setShopCompanyName] = useState("");
@@ -68,7 +70,7 @@ export default function ProviderRegisterPage() {
     setLocationStatus("");
 
     if (!navigator.geolocation) {
-      setError("Location capture is not available in this browser.");
+      setError(t("provider.locationUnavailable"));
       return;
     }
 
@@ -77,11 +79,11 @@ export default function ProviderRegisterPage() {
       (position) => {
         setLatitude(position.coords.latitude);
         setLongitude(position.coords.longitude);
-        setLocationStatus("Location captured.");
+        setLocationStatus(t("provider.locationCaptured"));
         setIsCapturingLocation(false);
       },
       () => {
-        setError("Unable to capture location. You can still submit without GPS.");
+        setError(t("provider.locationCaptureFailed"));
         setIsCapturingLocation(false);
       },
       { enableHighAccuracy: true, timeout: 10000 },
@@ -100,7 +102,7 @@ export default function ProviderRegisterPage() {
     ];
     const missingFile = requiredFileKeys.some((key) => files[key] === null);
     if (missingFile) {
-      setError("Please upload all required JPG documents.");
+      setError(t("provider.uploadAllDocs"));
       return;
     }
 
@@ -132,7 +134,7 @@ export default function ProviderRegisterPage() {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to submit your shop right now. Please try again.",
+          : t("provider.submitForVerification"),
       );
     } finally {
       setIsSubmitting(false);
@@ -141,15 +143,15 @@ export default function ProviderRegisterPage() {
 
   return (
     <AuthRedirectGuard>
-      <AuthPage subtitle="Service Provider Registration">
+      <AuthPage subtitle={t("auth.providerRegistration")}>
         <AuthCard
-          description="Fill in the details below to get your shop verified and listed."
-          title="Shop Details"
+          description={t("auth.providerRegisterDescription")}
+          title={t("provider.shopDetails")}
         >
           <form onSubmit={handleSubmit}>
             <FieldStack>
               <TextField
-                label="Shop/Company Name"
+                label={t("provider.shopName")}
                 minLength={2}
                 onChange={(event) => setShopCompanyName(event.target.value)}
                 placeholder="e.g., Deshmukh Brothers"
@@ -157,7 +159,7 @@ export default function ProviderRegisterPage() {
                 value={shopCompanyName}
               />
               <TextField
-                label="Owner Name"
+                label={t("provider.ownerName")}
                 minLength={2}
                 onChange={(event) => setOwnerName(event.target.value)}
                 placeholder="e.g., Tarendra Kumar"
@@ -167,18 +169,18 @@ export default function ProviderRegisterPage() {
               <TextField
                 autoComplete="tel"
                 inputMode="numeric"
-                label="WhatsApp Mobile No."
+                label={t("provider.whatsappNumber")}
                 maxLength={10}
                 onChange={(event) => setWhatsappMobileNumber(event.target.value)}
                 pattern="[0-9]{10}"
-                placeholder="10-digit mobile number"
+                placeholder={t("auth.phonePlaceholder")}
                 required
                 type="tel"
                 value={whatsappMobileNumber}
               />
               <TextField
                 autoComplete="email"
-                label="Email"
+                label={t("common.email")}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="e.g., your.email@example.com"
                 required
@@ -187,38 +189,38 @@ export default function ProviderRegisterPage() {
               />
               <TextField
                 autoComplete="new-password"
-                label="Password"
+                label={t("common.password")}
                 minLength={8}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Create your password"
+                placeholder={t("auth.createPassword")}
                 required
                 type="password"
                 value={password}
               />
               <FileField
-                label="Owner Aadhar Card (Front)"
+                label={t("provider.aadhaarFront")}
                 onChange={(event) => handleFileChange("aadhaarFront", event)}
                 required
               />
               <FileField
-                label="Owner Aadhar Card (Back)"
+                label={t("provider.aadhaarBack")}
                 onChange={(event) => handleFileChange("aadhaarBack", event)}
                 required
               />
               <FileField
-                label="Shop Payment Bill (e.g., Rent/Lease)"
+                label={t("provider.paymentBill")}
                 onChange={(event) => handleFileChange("paymentBill", event)}
                 required
               />
               <FileField
-                label="Shop Electricity Bill"
+                label={t("provider.electricityBill")}
                 onChange={(event) => handleFileChange("electricityBill", event)}
                 required
               />
 
               <div>
                 <p className="text-[16px] font-medium leading-none tracking-normal text-[#2f3338]">
-                  Shop Location (GPS)
+                  {t("provider.shopLocation")}
                 </p>
                 <button
                   className="mt-3 flex h-[52px] w-full items-center justify-center gap-3 rounded-lg border border-[#e7ecef] bg-white px-4 text-[16px] font-normal tracking-normal text-[#2f3338] transition hover:border-[#f9a21a] focus:outline-none focus:ring-2 focus:ring-[#fff0d4] disabled:cursor-not-allowed disabled:text-[#9aa0a6]"
@@ -228,12 +230,12 @@ export default function ProviderRegisterPage() {
                 >
                   <LocationIcon />
                   {isCapturingLocation
-                    ? "Capturing Location..."
-                    : "Capture Current Location"}
+                    ? t("provider.capturingLocation")
+                    : t("provider.captureLocation")}
                 </button>
                 <p className="mt-3 text-[13px] leading-5 tracking-normal text-[#7a7f86]">
                   {locationStatus ||
-                    "Please be at your shop to capture the correct location."}
+                    t("provider.locationHint")}
                 </p>
               </div>
 
@@ -241,14 +243,14 @@ export default function ProviderRegisterPage() {
                 <p className="text-[14px] leading-5 text-red-600">{error}</p>
               ) : null}
               <PrimaryButton disabled={isSubmitting} type="submit">
-                {isSubmitting ? "Submitting..." : "Submit for Verification"}
+                {isSubmitting ? t("provider.submitting") : t("provider.submitForVerification")}
               </PrimaryButton>
             </FieldStack>
           </form>
 
           <p className="mt-6 text-center text-[16px] leading-7 tracking-normal text-[#6d737c]">
-            Already registered?{" "}
-            <AuthLink href="/provider/login">Login to Dashboard</AuthLink>
+            {t("auth.alreadyRegistered")}{" "}
+            <AuthLink href="/provider/login">{t("auth.loginToDashboard")}</AuthLink>
           </p>
         </AuthCard>
       </AuthPage>

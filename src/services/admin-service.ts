@@ -42,6 +42,7 @@ export function loginAdmin(payload: { phone: string; password: string }) {
 
 export function getAdminSummary(accessToken: string) {
   return apiFetch<AdminSummary>("/admin/summary", {
+    cache: "no-store",
     headers: authHeaders(accessToken),
   });
 }
@@ -141,8 +142,21 @@ export function updateAdminUserActive(
   });
 }
 
+export function resetAdminUserPassword(
+  accessToken: string,
+  userId: number,
+  newPassword: string,
+) {
+  return apiFetch<void>(`/admin/users/${userId}/password`, {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ newPassword }),
+  });
+}
+
 export function getAdminAuditLogs(accessToken: string) {
   return apiFetch<AdminAuditLog[]>("/admin/audit-logs", {
+    cache: "no-store",
     headers: authHeaders(accessToken),
   });
 }
@@ -203,18 +217,21 @@ export function getAdminServices(accessToken: string) {
   });
 }
 
-export function createAdminService(accessToken: string, label: string) {
+export function createAdminService(
+  accessToken: string,
+  payload: { label: string; labelHi: string },
+) {
   return apiFetch<AdminService>("/admin/services", {
     method: "POST",
     headers: authHeaders(accessToken),
-    body: JSON.stringify({ label }),
+    body: JSON.stringify(payload),
   });
 }
 
 export function updateAdminService(
   accessToken: string,
   serviceId: number,
-  payload: Partial<Pick<AdminService, "label" | "displayOrder" | "isActive">>,
+  payload: Partial<Pick<AdminService, "label" | "labelHi" | "displayOrder" | "isActive">>,
 ) {
   return apiFetch<AdminService>(`/admin/services/${serviceId}`, {
     method: "PATCH",

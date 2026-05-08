@@ -9,14 +9,17 @@ import {
   AdminStatusBadge,
   formatAdminDate,
 } from "@/components/admin/admin-shell";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
+import { categoryLabelBySlug } from "@/lib/localized-labels";
 import { getAdminBookings } from "@/services/admin-service";
 import type { AdminBooking } from "@/types/admin";
 
 type StatusFilter = "all" | "pending" | "accepted" | "declined";
 
 export default function AdminBookingsPage() {
+  const { language, t } = useI18n();
   const { token } = useAuthToken();
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -39,9 +42,9 @@ export default function AdminBookingsPage() {
       })
       .catch((caughtError) => {
         setError(
-          caughtError instanceof ApiError
-            ? caughtError.message
-            : "Unable to load bookings.",
+            caughtError instanceof ApiError
+              ? caughtError.message
+              : t("admin.loadingBookings"),
         );
       })
       .finally(() => setIsLoading(false));
@@ -56,35 +59,35 @@ export default function AdminBookingsPage() {
   return (
     <AdminShell>
       <AdminPageHeader
-        subtitle="Track customer requests across pending, accepted, and declined states."
-        title="Bookings"
+        subtitle={t("admin.bookingsSubtitle")}
+        title={t("common.bookings")}
       />
 
       <AdminCard className="mb-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-end">
           <label className="flex-1 text-[14px] font-semibold text-[#2f3338]">
-            Search
+            {t("common.search")}
             <input
               className="mt-2 h-11 w-full rounded-lg border border-[#e7ecef] px-4 text-[14px] outline-none focus:border-[#f9a21a] focus:ring-2 focus:ring-[#fff0d4]"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Customer, provider, phone"
+              placeholder={t("admin.searchPlaceholderBookings")}
               value={query}
             />
           </label>
           <label className="text-[14px] font-semibold text-[#2f3338]">
-            Status
+            {t("common.status")}
             <select
               className="mt-2 h-11 w-full rounded-lg border border-[#e7ecef] px-4 text-[14px] outline-none focus:border-[#f9a21a] md:w-[180px]"
               onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
               value={statusFilter}
             >
-              <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="accepted">Accepted</option>
-              <option value="declined">Declined</option>
+              <option value="all">{t("common.all")}</option>
+              <option value="pending">{t("status.pending")}</option>
+              <option value="accepted">{t("status.accepted")}</option>
+              <option value="declined">{t("status.declined")}</option>
             </select>
           </label>
-          <AdminButton onClick={loadBookings}>Apply</AdminButton>
+          <AdminButton onClick={loadBookings}>{t("common.apply")}</AdminButton>
         </div>
       </AdminCard>
 
@@ -96,9 +99,9 @@ export default function AdminBookingsPage() {
 
       <div className="grid gap-4">
         {isLoading ? (
-          <AdminCard>Loading bookings...</AdminCard>
+          <AdminCard>{t("admin.loadingBookings")}</AdminCard>
         ) : bookings.length === 0 ? (
-          <AdminCard>No bookings found.</AdminCard>
+          <AdminCard>{t("admin.noBookingsFound")}</AdminCard>
         ) : (
           bookings.map((booking) => (
             <AdminCard key={booking.id}>
@@ -106,20 +109,26 @@ export default function AdminBookingsPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-[19px] font-extrabold text-black">
-                      {booking.serviceLabel}
+                      {categoryLabelBySlug(
+                        booking.categorySlug,
+                        booking.serviceLabel,
+                        language,
+                      )}
                     </h2>
                     <AdminStatusBadge status={booking.status} />
                   </div>
                   <p className="mt-2 text-[14px] leading-6 text-[#6d737c]">
-                    Customer: {booking.customerPhone ?? "Unavailable"} • Provider:{" "}
+                    {t("common.customer")}:{" "}
+                    {booking.customerPhone ?? t("common.unavailable")} &bull;{" "}
+                    {t("common.provider")}:{" "}
                     {booking.shopCompanyName}
                   </p>
                   <p className="text-[13px] text-[#8a9098]">
-                    Distance:{" "}
+                    {t("common.distance")}:{" "}
                     {booking.distanceKm !== null
                       ? `${booking.distanceKm} km`
-                      : "Unavailable"}{" "}
-                    • Created {formatAdminDate(booking.createdAt)}
+                      : t("common.unavailable")}{" "}
+                    &bull; {t("common.created")} {formatAdminDate(booking.createdAt)}
                   </p>
                 </div>
                 <p className="rounded-lg bg-[#f5fbfd] px-3 py-2 text-[13px] font-semibold text-[#2f3338]">

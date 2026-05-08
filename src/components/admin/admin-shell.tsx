@@ -1,6 +1,8 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useI18n } from "@/components/i18n/language-provider";
+import type { TranslationKey } from "@/lib/i18n";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -17,15 +19,15 @@ type AdminNavIcon =
   | "services"
   | "audit";
 
-const navItems: { href: string; icon: AdminNavIcon; label: string }[] = [
-  { href: "/admin/dashboard", icon: "dashboard", label: "Dashboard" },
-  { href: "/admin/providers", icon: "providers", label: "Providers" },
-  { href: "/admin/documents", icon: "documents", label: "Documents" },
-  { href: "/admin/customers", icon: "customers", label: "Customers" },
-  { href: "/admin/bookings", icon: "bookings", label: "Bookings" },
-  { href: "/admin/banners", icon: "banners", label: "Banners" },
-  { href: "/admin/services", icon: "services", label: "Services" },
-  { href: "/admin/audit-logs", icon: "audit", label: "Audit" },
+const navItems = [
+  { href: "/admin/dashboard", icon: "dashboard" as const, labelKey: "common.dashboard" as const },
+  { href: "/admin/providers", icon: "providers" as const, labelKey: "common.providers" as const },
+  { href: "/admin/documents", icon: "documents" as const, labelKey: "common.documents" as const },
+  { href: "/admin/customers", icon: "customers" as const, labelKey: "common.customers" as const },
+  { href: "/admin/bookings", icon: "bookings" as const, labelKey: "common.bookings" as const },
+  { href: "/admin/banners", icon: "banners" as const, labelKey: "nav.banners" as const },
+  { href: "/admin/services", icon: "services" as const, labelKey: "common.services" as const },
+  { href: "/admin/audit-logs", icon: "audit" as const, labelKey: "nav.audit" as const },
 ];
 
 function AdminIcon({ name }: { name: AdminNavIcon }) {
@@ -115,6 +117,7 @@ function AdminIcon({ name }: { name: AdminNavIcon }) {
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useI18n();
   const { isReady, token } = useAuthToken();
   const [isAllowed, setIsAllowed] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
@@ -160,7 +163,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   if (!isReady || !token || isChecking || !isAllowed) {
     return (
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-6 text-center text-[16px] text-[#6d737c]">
-        Loading admin panel...
+        {t("admin.loading")}
       </main>
     );
   }
@@ -183,7 +186,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   key={item.href}
                 >
                   <AdminIcon name={item.icon} />
-                  <span>{item.label}</span>
+                  <span>{t(item.labelKey)}</span>
                 </Link>
               );
             })}
@@ -204,11 +207,13 @@ export function AdminPageHeader({
   subtitle?: string;
   title: string;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-[#d88708]">
-          Admin
+          {t("common.admin")}
         </p>
         <h1 className="mt-1 text-[27px] font-extrabold leading-tight tracking-normal text-black sm:text-[32px]">
           {title}
@@ -258,6 +263,7 @@ export function AdminButton({
 }
 
 export function AdminStatusBadge({ status }: { status: string }) {
+  const { t } = useI18n();
   const className =
     status === "approved" || status === "accepted" || status === "active"
       ? "bg-[#defde7] text-[#2aa946]"
@@ -267,7 +273,7 @@ export function AdminStatusBadge({ status }: { status: string }) {
 
   return (
     <span className={`inline-flex rounded-full px-3 py-1 text-[12px] font-semibold capitalize ${className}`}>
-      {status}
+      {t(`status.${status}` as TranslationKey)}
     </span>
   );
 }

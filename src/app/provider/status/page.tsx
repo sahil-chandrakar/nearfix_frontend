@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { AuthCard, AuthPage } from "@/components/auth/marketplace-auth";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
+import type { TranslationKey } from "@/lib/i18n";
 import { ApiError } from "@/lib/http-client";
 import { getProviderCategories, getProviderProfile } from "@/services/auth-service";
 import type { ProviderProfile } from "@/types/auth";
 import { useRouter } from "next/navigation";
 
 export default function ProviderStatusPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const { isReady, token } = useAuthToken();
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
@@ -45,7 +48,7 @@ export default function ProviderStatusPage() {
           setError(
             caughtError instanceof ApiError
               ? caughtError.message
-              : "Unable to load your provider status.",
+              : t("provider.loadingStatus"),
           );
         }
       })
@@ -58,17 +61,17 @@ export default function ProviderStatusPage() {
     return () => {
       isMounted = false;
     };
-  }, [isReady, router, token]);
+  }, [isReady, router, t, token]);
 
   return (
-    <AuthPage subtitle="Service Provider Portal">
+    <AuthPage subtitle={t("auth.providerPortal")}>
       <AuthCard
-        description="Your shop verification details will appear here."
-        title="Provider Status"
+        description={t("provider.statusDescription")}
+        title={t("provider.statusTitle")}
       >
         {isLoading ? (
           <p className="text-[16px] leading-7 text-[#6d737c]">
-            Loading your provider status...
+            {t("provider.loadingStatus")}
           </p>
         ) : null}
 
@@ -79,28 +82,30 @@ export default function ProviderStatusPage() {
         {profile ? (
           <div className="space-y-4 text-[16px] leading-7 text-[#4d525a]">
             <p>
-              <span className="font-semibold text-black">Shop:</span>{" "}
+              <span className="font-semibold text-black">{t("common.shop")}:</span>{" "}
               {profile.shopCompanyName}
             </p>
             <p>
-              <span className="font-semibold text-black">Owner:</span>{" "}
+              <span className="font-semibold text-black">{t("provider.ownerName")}:</span>{" "}
               {profile.ownerName}
             </p>
             <p>
-              <span className="font-semibold text-black">Status:</span>{" "}
+              <span className="font-semibold text-black">{t("common.status")}:</span>{" "}
               <span className="font-semibold capitalize text-[#d69a2d]">
-                {profile.verificationStatus}
+                {t(`status.${profile.verificationStatus}` as TranslationKey)}
               </span>
             </p>
             <p>
-              <span className="font-semibold text-black">Categories:</span>{" "}
-              {categoryCount > 0 ? `${categoryCount} selected` : "Not selected"}
+              <span className="font-semibold text-black">{t("common.categories")}:</span>{" "}
+              {categoryCount > 0 ? categoryCount : t("provider.notSelected")}
             </p>
             <a
               className="flex h-[52px] items-center justify-center rounded-lg bg-[#f9a21a] px-5 text-[17px] font-semibold tracking-normal text-white transition hover:bg-[#ee9914]"
               href="/provider/categories"
             >
-              {categoryCount > 0 ? "Manage Categories" : "Select Categories"}
+              {categoryCount > 0
+                ? t("provider.manageCategories")
+                : t("provider.selectCategories")}
             </a>
           </div>
         ) : null}

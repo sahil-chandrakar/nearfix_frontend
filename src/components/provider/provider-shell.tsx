@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { getCurrentUser } from "@/services/auth-service";
 import Link from "next/link";
@@ -10,17 +11,18 @@ import { usePathname, useRouter } from "next/navigation";
 type ProviderNavIconName = "new" | "accepted" | "shop";
 
 const providerNavItems = [
-  { href: "/provider/dashboard", icon: "new" as const, label: "New Booking" },
+  { href: "/provider/dashboard", icon: "new" as const, labelKey: "nav.newBooking" as const },
   {
     href: "/provider/accepted-bookings",
     icon: "accepted" as const,
-    label: "Accepted",
+    labelKey: "common.accepted" as const,
   },
-  { href: "/provider/my-shop", icon: "shop" as const, label: "My Shop" },
+  { href: "/provider/my-shop", icon: "shop" as const, labelKey: "nav.myShop" as const },
 ];
 
 export function ProviderShell({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const { t } = useI18n();
   const { isReady, token } = useAuthToken();
   const [isAllowed, setIsAllowed] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
@@ -69,7 +71,7 @@ export function ProviderShell({ children }: { children: ReactNode }) {
   if (!isReady || !token || isChecking || !isAllowed) {
     return (
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-[#f5fbfd] px-6 text-center text-[17px] leading-7 text-[#6d737c] sm:min-h-[calc(100vh-5rem)]">
-        Loading provider page...
+        {t("provider.loading")}
       </main>
     );
   }
@@ -128,6 +130,7 @@ export function ProviderCard({ children }: { children: ReactNode }) {
 
 function ProviderBottomNav() {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 mx-auto max-w-[1040px] rounded-t-xl bg-[#f9a21a] px-3 pb-2 pt-2 shadow-[0_-2px_12px_rgba(15,23,42,0.12)] sm:bottom-4 sm:rounded-xl sm:px-6">
@@ -144,7 +147,7 @@ function ProviderBottomNav() {
               key={item.href}
             >
               <ProviderNavIcon name={item.icon} />
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </Link>
           );
         })}

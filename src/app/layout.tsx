@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { LanguageProvider } from "@/components/i18n/language-provider";
 import { SiteChrome } from "@/components/layout/site-chrome";
 import Script from "next/script";
 import "./globals.css";
@@ -161,7 +162,9 @@ export default function RootLayout({
           id="strip-extension-hydration-attributes"
           strategy="beforeInteractive"
         />
-        <SiteChrome>{children}</SiteChrome>
+        <LanguageProvider>
+          <SiteChrome>{children}</SiteChrome>
+        </LanguageProvider>
       </body>
     </html>
   );

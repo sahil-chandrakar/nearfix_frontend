@@ -65,7 +65,9 @@ export type ApiServiceCategory = {
   id: number | null;
   slug: string;
   label: string;
+  labelHi: string;
   group: string;
+  groupHi: string;
   isActive: boolean;
   displayOrder: number;
 };

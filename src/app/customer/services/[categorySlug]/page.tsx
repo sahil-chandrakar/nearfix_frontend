@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { CustomerShell } from "@/components/customer/customer-shell";
 import { ServiceIcon } from "@/components/customer/service-icon";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
+import { categoryLabelBySlug } from "@/lib/localized-labels";
 import { serviceCategoryBySlug } from "@/lib/service-categories";
 import {
   createCustomerBooking,
@@ -16,6 +18,7 @@ import {
 import type { CustomerProviderResult } from "@/types/auth";
 
 export default function CustomerServiceResultsPage() {
+  const { language, t } = useI18n();
   const params = useParams<{ categorySlug: string }>();
   const router = useRouter();
   const { isReady, token } = useAuthToken();
@@ -27,7 +30,9 @@ export default function CustomerServiceResultsPage() {
       .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
-  const [categoryLabel, setCategoryLabel] = useState(fallbackCategoryLabel);
+  const [categoryTitle, setCategoryTitle] = useState(
+    categoryLabelBySlug(categorySlug, fallbackCategoryLabel, language),
+  );
   const [providers, setProviders] = useState<CustomerProviderResult[]>([]);
   const [error, setError] = useState("");
   const [callError, setCallError] = useState("");
@@ -37,7 +42,9 @@ export default function CustomerServiceResultsPage() {
     lat: number;
     lng: number;
   } | null>(null);
-  const [locationMessage, setLocationMessage] = useState("Showing matching shops.");
+  const [locationMessage, setLocationMessage] = useState(
+    language === "hi" ? "मिलती दुकानें दिखा रहे हैं।" : "Showing matching shops.",
+  );
 
   useEffect(() => {
     if (!isReady) {
@@ -57,7 +64,9 @@ export default function CustomerServiceResultsPage() {
           (nextCategory) => nextCategory.slug === categorySlug,
         );
         if (isMounted && matchedCategory) {
-          setCategoryLabel(matchedCategory.label);
+          setCategoryTitle(
+            language === "hi" ? matchedCategory.labelHi : matchedCategory.label,
+          );
         }
       })
       .catch(() => {
@@ -101,12 +110,12 @@ export default function CustomerServiceResultsPage() {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         };
-        setLocationMessage("Sorted by nearby distance.");
+        setLocationMessage(language === "hi" ? "पास की दूरी के हिसाब से।" : "Sorted by nearby distance.");
         setCustomerCoords(coords);
         loadProviders(coords);
       },
       () => {
-        setLocationMessage("Location denied. Showing matching shops.");
+        setLocationMessage(language === "hi" ? "लोकेशन नहीं मिली। मिलती दुकानें दिखा रहे हैं।" : "Location denied. Showing matching shops.");
         loadProviders(null);
       },
       { enableHighAccuracy: true, timeout: 8000 },
@@ -115,7 +124,7 @@ export default function CustomerServiceResultsPage() {
     return () => {
       isMounted = false;
     };
-  }, [categorySlug, isReady, router, token]);
+  }, [categorySlug, isReady, language, router, token]);
 
   async function handleCallProvider(provider: CustomerProviderResult) {
     if (!token) {
@@ -153,7 +162,7 @@ export default function CustomerServiceResultsPage() {
           href="/customer/home"
         >
           <span aria-hidden="true">{"<-"}</span>
-          Back
+          {t("common.back")}
         </Link>
 
         <>
@@ -163,7 +172,7 @@ export default function CustomerServiceResultsPage() {
               </span>
               <div>
                 <h1 className="text-[25px] font-extrabold leading-tight tracking-normal text-black sm:text-[29px] md:text-[35px]">
-                  {categoryLabel}
+                  {categoryTitle}
                 </h1>
                 <p className="mt-1 text-[15px] leading-6 tracking-normal text-[#7a7f86]">
                   {locationMessage}
@@ -180,7 +189,7 @@ export default function CustomerServiceResultsPage() {
 
           {isLoading ? (
             <div className="rounded-xl border border-[#e7ecef] bg-white px-6 py-7 text-[17px] leading-7 text-[#6d737c] shadow-[0_2px_10px_rgba(15,23,42,0.07)]">
-              Loading nearby shops...
+              {t("common.loading")}
             </div>
           ) : null}
 
@@ -193,10 +202,10 @@ export default function CustomerServiceResultsPage() {
           {!isLoading && !error && providers.length === 0 ? (
             <div className="rounded-xl border border-[#e7ecef] bg-white px-6 py-8 text-center shadow-[0_2px_10px_rgba(15,23,42,0.07)]">
               <h2 className="text-[24px] font-extrabold tracking-normal text-black">
-                No shops found
+                {t("customer.noProviders")}
               </h2>
               <p className="mt-3 text-[16px] leading-6 tracking-normal text-[#6d737c]">
-                Approved providers for this category will appear here.
+                {t("customer.noProviders")}
               </p>
             </div>
           ) : null}
@@ -219,7 +228,7 @@ export default function CustomerServiceResultsPage() {
                   <span className="rounded-full bg-[#defde7] px-3 py-1 text-[13px] font-semibold tracking-normal text-[#2aa946]">
                     {provider.distanceKm !== null
                       ? `${provider.distanceKm} km`
-                      : "Nearby"}
+                      : t("customer.distanceUnavailable")}
                   </span>
                 </div>
                 <button
@@ -229,8 +238,8 @@ export default function CustomerServiceResultsPage() {
                   type="button"
                 >
                   {callingProviderId === provider.providerId
-                    ? "Creating Booking..."
-                    : "Call Provider"}
+                    ? t("common.loading")
+                    : t("common.callProvider")}
                 </button>
               </article>
             ))}

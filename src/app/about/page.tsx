@@ -1,3 +1,6 @@
+"use client";
+
+import { useI18n } from "@/components/i18n/language-provider";
 import Link from "next/link";
 
 function BackIcon() {
@@ -38,19 +41,21 @@ function InfoIcon() {
 }
 
 export default function AboutPage() {
+  const { t } = useI18n();
+
   return (
     <main>
       <section className="border-b border-[#edf1f3] bg-white">
         <div className="mx-auto flex h-16 w-full max-w-[430px] items-center gap-6 px-8 md:h-20 md:max-w-[820px] lg:max-w-[1040px]">
           <Link
-            aria-label="Back to home"
+            aria-label={t("common.back")}
             className="text-black transition hover:text-[#f9a21a] focus:outline-none focus:ring-2 focus:ring-[#f9a21a]"
             href="/"
           >
             <BackIcon />
           </Link>
           <h1 className="text-[28px] font-extrabold leading-none tracking-normal text-[#f9a21a] drop-shadow-[0_1px_1px_rgba(249,162,26,0.22)] md:text-[32px]">
-            About
+            {t("about.title")}
           </h1>
         </div>
       </section>
@@ -63,13 +68,11 @@ export default function AboutPage() {
             </div>
 
             <h2 className="mt-5 text-[25px] font-extrabold leading-tight tracking-normal text-black md:text-[30px]">
-              About NearFix
+              {t("about.heading")}
             </h2>
 
             <p className="mt-4 text-[16px] font-normal leading-7 tracking-normal text-[#6d737c] md:text-[18px] md:leading-8">
-              NearFix helps customers find trusted local service professionals
-              quickly, while giving providers a simple way to connect and grow
-              their work.
+              {t("about.description")}
             </p>
           </article>
         </div>

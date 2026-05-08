@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { getCurrentUser } from "@/services/auth-service";
 import Link from "next/link";
@@ -67,13 +68,14 @@ function BottomIcon({ name }: { name: "home" | "booking" | "profile" }) {
 }
 
 const bottomNavItems = [
-  { href: "/customer/home", icon: "home" as const, label: "Home" },
-  { href: "/customer/bookings", icon: "booking" as const, label: "My Booking" },
-  { href: "/customer/profile", icon: "profile" as const, label: "My Profile" },
+  { href: "/customer/home", icon: "home" as const, labelKey: "common.home" as const },
+  { href: "/customer/bookings", icon: "booking" as const, labelKey: "nav.myBooking" as const },
+  { href: "/customer/profile", icon: "profile" as const, labelKey: "nav.myProfile" as const },
 ];
 
 export function CustomerShell({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const { t } = useI18n();
   const { isReady, token } = useAuthToken();
   const [isAllowed, setIsAllowed] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
@@ -122,7 +124,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
   if (!isReady || !token || isChecking || !isAllowed) {
     return (
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-[#f5fbfd] px-6 text-center text-[17px] leading-7 text-[#6d737c] sm:min-h-[calc(100vh-5rem)]">
-        Loading customer page...
+        {t("common.loading")}
       </main>
     );
   }
@@ -137,6 +139,7 @@ export function CustomerShell({ children }: { children: ReactNode }) {
 
 function CustomerBottomNav() {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 mx-auto max-w-[1040px] rounded-t-xl bg-[#f9a21a] px-3 pb-2 pt-2 shadow-[0_-2px_12px_rgba(15,23,42,0.12)] sm:bottom-4 sm:rounded-xl sm:px-6">
@@ -155,7 +158,7 @@ function CustomerBottomNav() {
               key={item.href}
             >
               <BottomIcon name={item.icon} />
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </Link>
           );
         })}

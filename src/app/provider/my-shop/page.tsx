@@ -13,8 +13,11 @@ import {
   ProviderCard,
   ProviderPageFrame,
 } from "@/components/provider/provider-shell";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
+import type { TranslationKey } from "@/lib/i18n";
 import { ApiError } from "@/lib/http-client";
+import { categoryGroupLabel, categoryLabel } from "@/lib/localized-labels";
 import { categoryGroups, serviceCategories } from "@/lib/service-categories";
 import {
   createProviderDocumentChangeRequests,
@@ -33,17 +36,18 @@ import type {
 } from "@/types/auth";
 import { useRouter } from "next/navigation";
 
-const documentLabels: Record<
+const documentLabelKeys: Record<
   ProviderDocumentChangeRequest["documentType"],
-  string
+  TranslationKey
 > = {
-  aadhaar_back: "Owner Aadhar Card (Back)",
-  aadhaar_front: "Owner Aadhar Card (Front)",
-  electricity_bill: "Shop Electricity Bill",
-  payment_bill: "Shop Payment Bill",
+  aadhaar_back: "provider.aadhaarBack",
+  aadhaar_front: "provider.aadhaarFront",
+  electricity_bill: "provider.electricityBill",
+  payment_bill: "provider.paymentBill",
 };
 
 function StatusBadge({ status }: { status: ProviderDocumentChangeRequest["status"] }) {
+  const { t } = useI18n();
   const className =
     status === "approved"
       ? "bg-[#defde7] text-[#2aa946]"
@@ -53,12 +57,13 @@ function StatusBadge({ status }: { status: ProviderDocumentChangeRequest["status
 
   return (
     <span className={`rounded-full px-3 py-1 text-[12px] font-semibold capitalize ${className}`}>
-      {status}
+      {t(`status.${status}` as TranslationKey)}
     </span>
   );
 }
 
 export default function ProviderMyShopPage() {
+  const { language, t } = useI18n();
   const router = useRouter();
   const { isReady, token } = useAuthToken();
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
@@ -131,7 +136,7 @@ export default function ProviderMyShopPage() {
           setError(
             caughtError instanceof ApiError
               ? caughtError.message
-              : "Unable to load shop details.",
+              : t("provider.shopDetails"),
           );
         }
       })
@@ -144,7 +149,7 @@ export default function ProviderMyShopPage() {
     return () => {
       isMounted = false;
     };
-  }, [isReady, router, token]);
+  }, [isReady, router, t, token]);
 
   function toggleCategory(slug: string) {
     setSelectedSlugs((currentSlugs) =>
@@ -159,7 +164,7 @@ export default function ProviderMyShopPage() {
     setMessage("");
 
     if (!navigator.geolocation) {
-      setError("Location capture is not available in this browser.");
+      setError(t("provider.locationUnavailable"));
       return;
     }
 
@@ -168,11 +173,11 @@ export default function ProviderMyShopPage() {
       (position) => {
         setLatitude(position.coords.latitude);
         setLongitude(position.coords.longitude);
-        setMessage("Location captured. Save shop details to update it.");
+        setMessage(t("provider.locationCaptured"));
         setIsCapturingLocation(false);
       },
       () => {
-        setError("Unable to capture location.");
+        setError(t("provider.locationCaptureFailed"));
         setIsCapturingLocation(false);
       },
       { enableHighAccuracy: true, timeout: 10000 },
@@ -201,12 +206,12 @@ export default function ProviderMyShopPage() {
         whatsappMobileNumber,
       });
       setProfile(updatedProfile);
-      setMessage("Shop details updated.");
+      setMessage(t("provider.shopDetailsUpdated"));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to update shop details.",
+          : t("provider.shopDetails"),
       );
     } finally {
       setIsSavingDetails(false);
@@ -226,12 +231,12 @@ export default function ProviderMyShopPage() {
     try {
       const categories = await saveProviderCategories(token, selectedSlugs);
       setSelectedSlugs(categories.categorySlugs);
-      setMessage("Categories updated.");
+      setMessage(t("provider.categoriesUpdated"));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to update categories.",
+          : t("provider.saveCategories"),
       );
     } finally {
       setIsSavingCategories(false);
@@ -254,12 +259,12 @@ export default function ProviderMyShopPage() {
       await updateProviderPassword(token, { currentPassword, newPassword });
       setCurrentPassword("");
       setNewPassword("");
-      setMessage("Password changed.");
+      setMessage(t("provider.passwordChanged"));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to change password.",
+          : t("provider.changePassword"),
       );
     } finally {
       setIsSavingPassword(false);
@@ -283,7 +288,7 @@ export default function ProviderMyShopPage() {
 
     const selectedFiles = Object.entries(files).filter(([, file]) => file !== null);
     if (selectedFiles.length === 0) {
-      setError("Choose at least one JPG document.");
+      setError(t("provider.chooseOneDocument"));
       return;
     }
 
@@ -307,12 +312,12 @@ export default function ProviderMyShopPage() {
         electricityBill: null,
         paymentBill: null,
       });
-      setMessage("Document change request submitted for admin approval.");
+      setMessage(t("provider.documentRequestSubmitted"));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to upload documents.",
+          : t("provider.documents"),
       );
     } finally {
       setIsUploadingDocuments(false);
@@ -320,11 +325,11 @@ export default function ProviderMyShopPage() {
   }
 
   return (
-    <ProviderPageFrame title="My Shop">
+    <ProviderPageFrame title={t("provider.myShop")}>
       {isLoading ? (
         <ProviderCard>
           <p className="text-[16px] leading-7 text-[#6d737c]">
-            Loading shop details...
+            {t("common.loading")}
           </p>
         </ProviderCard>
       ) : null}
@@ -345,20 +350,20 @@ export default function ProviderMyShopPage() {
         <div className="flex flex-col gap-5 sm:gap-6">
           <ProviderCard>
             <h2 className="text-[22px] font-extrabold tracking-normal text-black sm:text-[24px]">
-              Shop Details
+              {t("provider.shopDetails")}
             </h2>
             {profile.rejectionReason ? (
               <p className="mt-3 rounded-lg bg-red-50 px-4 py-3 text-[14px] leading-5 text-red-600">
-                Rejection reason: {profile.rejectionReason}
+                {t("provider.rejectionReason")}: {profile.rejectionReason}
               </p>
             ) : null}
             <p className="mt-2 text-[14px] leading-6 tracking-normal text-[#7a7f86] sm:text-[15px]">
-              These fields update immediately.
+              {t("provider.immediateFields")}
             </p>
             <form className="mt-5 sm:mt-6" onSubmit={handleDetailsSubmit}>
               <FieldStack>
                 <TextField
-                  label="Shop/Company Name"
+                  label={t("provider.shopName")}
                   minLength={2}
                   onChange={(event) => setShopCompanyName(event.target.value)}
                   placeholder="e.g., Deshmukh Brothers"
@@ -366,7 +371,7 @@ export default function ProviderMyShopPage() {
                   value={shopCompanyName}
                 />
                 <TextField
-                  label="Owner Name"
+                  label={t("provider.ownerName")}
                   minLength={2}
                   onChange={(event) => setOwnerName(event.target.value)}
                   placeholder="Owner name"
@@ -375,17 +380,17 @@ export default function ProviderMyShopPage() {
                 />
                 <TextField
                   inputMode="numeric"
-                  label="WhatsApp Mobile No."
+                  label={t("provider.whatsappNumber")}
                   maxLength={10}
                   onChange={(event) => setWhatsappMobileNumber(event.target.value)}
                   pattern="[0-9]{10}"
-                  placeholder="10-digit mobile number"
+                  placeholder={t("auth.phonePlaceholder")}
                   required
                   type="tel"
                   value={whatsappMobileNumber}
                 />
                 <TextField
-                  label="Email"
+                  label={t("common.email")}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="email@example.com"
                   required
@@ -394,7 +399,7 @@ export default function ProviderMyShopPage() {
                 />
                 <div>
                   <p className="text-[16px] font-medium leading-none tracking-normal text-[#2f3338]">
-                    Shop Location
+                    {t("provider.shopLocation")}
                   </p>
                   <button
                     className="mt-3 flex h-[52px] w-full items-center justify-center rounded-lg border border-[#e7ecef] bg-white px-4 text-[16px] font-normal tracking-normal text-[#2f3338] transition hover:border-[#f9a21a]"
@@ -402,16 +407,18 @@ export default function ProviderMyShopPage() {
                     onClick={captureLocation}
                     type="button"
                   >
-                    {isCapturingLocation ? "Capturing..." : "Capture Current Location"}
+                    {isCapturingLocation
+                      ? t("provider.capturingLocation")
+                      : t("provider.captureLocation")}
                   </button>
                   <p className="mt-3 text-[13px] leading-5 tracking-normal text-[#7a7f86]">
                     {latitude !== null && longitude !== null
-                      ? `Current: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
-                      : "No location saved yet."}
+                      ? `${t("provider.currentLocation")}: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
+                      : t("provider.noLocationSaved")}
                   </p>
                 </div>
                 <PrimaryButton disabled={isSavingDetails} type="submit">
-                  {isSavingDetails ? "Saving..." : "Save Shop Details"}
+                  {isSavingDetails ? t("common.saving") : t("provider.saveShopDetails")}
                 </PrimaryButton>
               </FieldStack>
             </form>
@@ -419,16 +426,16 @@ export default function ProviderMyShopPage() {
 
           <ProviderCard>
             <h2 className="text-[22px] font-extrabold tracking-normal text-black sm:text-[24px]">
-              Service Categories
+              {t("provider.serviceCategories")}
             </h2>
             <p className="mt-2 text-[14px] leading-6 tracking-normal text-[#7a7f86] sm:text-[15px]">
-              Categories update immediately and control where customers find you.
+              {t("provider.categoriesHelp")}
             </p>
             <div className="mt-5 space-y-6 sm:mt-6 sm:space-y-7">
               {categoryGroups.map((group) => (
                 <section key={group}>
                   <h3 className="text-[17px] font-extrabold tracking-normal text-black sm:text-[18px]">
-                    {group}
+                    {categoryGroupLabel(group, language)}
                   </h3>
                   <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
                     {(availableCategories.length > 0
@@ -454,7 +461,7 @@ export default function ProviderMyShopPage() {
                               <ServiceIcon className="h-6 w-6 sm:h-7 sm:w-7" slug={category.slug} />
                             </span>
                             <span className="mt-2 text-[12px] font-semibold leading-5 tracking-normal text-[#2f3338] sm:mt-3 sm:text-[13px]">
-                              {category.label}
+                              {categoryLabel(category, language)}
                             </span>
                           </button>
                         );
@@ -469,38 +476,38 @@ export default function ProviderMyShopPage() {
               onClick={handleCategoriesSubmit}
               type="button"
             >
-              {isSavingCategories ? "Saving..." : "Save Categories"}
+              {isSavingCategories ? t("common.saving") : t("provider.saveCategories")}
             </button>
           </ProviderCard>
 
           <ProviderCard>
             <h2 className="text-[22px] font-extrabold tracking-normal text-black sm:text-[24px]">
-              Change Password
+              {t("provider.changePassword")}
             </h2>
             <form className="mt-5 sm:mt-6" onSubmit={handlePasswordSubmit}>
               <FieldStack>
                 <TextField
                   autoComplete="current-password"
-                  label="Current Password"
+                  label={t("provider.currentPassword")}
                   minLength={8}
                   onChange={(event) => setCurrentPassword(event.target.value)}
-                  placeholder="Enter current password"
+                  placeholder={t("provider.currentPassword")}
                   required
                   type="password"
                   value={currentPassword}
                 />
                 <TextField
                   autoComplete="new-password"
-                  label="New Password"
+                  label={t("provider.newPassword")}
                   minLength={8}
                   onChange={(event) => setNewPassword(event.target.value)}
-                  placeholder="Enter new password"
+                  placeholder={t("provider.newPassword")}
                   required
                   type="password"
                   value={newPassword}
                 />
                 <PrimaryButton disabled={isSavingPassword} type="submit">
-                  {isSavingPassword ? "Changing..." : "Change Password"}
+                  {isSavingPassword ? t("provider.changing") : t("provider.changePassword")}
                 </PrimaryButton>
               </FieldStack>
             </form>
@@ -508,33 +515,33 @@ export default function ProviderMyShopPage() {
 
           <ProviderCard>
             <h2 className="text-[22px] font-extrabold tracking-normal text-black sm:text-[24px]">
-              Documents
+              {t("provider.documents")}
             </h2>
             <p className="mt-2 text-[14px] leading-6 tracking-normal text-[#7a7f86] sm:text-[15px]">
-              Replacement documents need admin approval before they become active.
+              {t("provider.documentsHelp")}
             </p>
             <form className="mt-5 sm:mt-6" onSubmit={handleDocumentSubmit}>
               <FieldStack>
                 <FileField
-                  label="Owner Aadhar Card (Front)"
+                  label={t("provider.aadhaarFront")}
                   onChange={(event) => handleFileChange("aadhaarFront", event)}
                 />
                 <FileField
-                  label="Owner Aadhar Card (Back)"
+                  label={t("provider.aadhaarBack")}
                   onChange={(event) => handleFileChange("aadhaarBack", event)}
                 />
                 <FileField
-                  label="Shop Payment Bill"
+                  label={t("provider.paymentBill")}
                   onChange={(event) => handleFileChange("paymentBill", event)}
                 />
                 <FileField
-                  label="Shop Electricity Bill"
+                  label={t("provider.electricityBill")}
                   onChange={(event) => handleFileChange("electricityBill", event)}
                 />
                 <PrimaryButton disabled={isUploadingDocuments} type="submit">
                   {isUploadingDocuments
-                    ? "Submitting..."
-                    : "Submit Document Changes"}
+                    ? t("provider.submitting")
+                    : t("provider.submitDocumentChanges")}
                 </PrimaryButton>
               </FieldStack>
             </form>
@@ -548,7 +555,7 @@ export default function ProviderMyShopPage() {
                   >
                     <div>
                       <p className="text-[14px] font-semibold text-[#2f3338]">
-                        {documentLabels[request.documentType]}
+                        {t(documentLabelKeys[request.documentType])}
                       </p>
                       <p className="mt-1 text-[12px] text-[#7a7f86]">
                         {new Date(request.createdAt).toLocaleDateString()}

@@ -2,14 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { CustomerShell } from "@/components/customer/customer-shell";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
+import type { TranslationKey } from "@/lib/i18n";
 import { ApiError } from "@/lib/http-client";
+import { categoryLabelBySlug } from "@/lib/localized-labels";
 import { getCustomerBookings } from "@/services/auth-service";
 import type { CustomerBooking } from "@/types/auth";
 import { useRouter } from "next/navigation";
 
 export default function CustomerBookingsPage() {
   const router = useRouter();
+  const { language, t } = useI18n();
   const { isReady, token } = useAuthToken();
   const [bookings, setBookings] = useState<CustomerBooking[]>([]);
   const [error, setError] = useState("");
@@ -52,19 +56,19 @@ export default function CustomerBookingsPage() {
     return () => {
       isMounted = false;
     };
-  }, [isReady, router, token]);
+  }, [isReady, router, t, token]);
 
   return (
     <CustomerShell>
       <div className="mx-auto w-full max-w-[492px] px-6 pb-10 pt-8 sm:max-w-[536px] sm:px-8 md:max-w-[880px] md:px-10">
         <h1 className="text-[26px] font-extrabold leading-tight tracking-normal text-black sm:text-[30px] md:text-[35px]">
-          My Booking
+          {t("customer.bookingsTitle")}
         </h1>
 
         <section className="mt-7 rounded-xl border border-[#e7ecef] bg-white px-5 py-7 shadow-[0_2px_10px_rgba(15,23,42,0.07)] sm:px-6 sm:py-8">
           {isLoading ? (
             <p className="text-[17px] leading-7 text-[#6d737c]">
-              Loading bookings...
+              {t("common.loading")}
             </p>
           ) : null}
 
@@ -92,10 +96,10 @@ export default function CustomerBookingsPage() {
                 </svg>
               </div>
               <h2 className="mt-5 text-[22px] font-extrabold tracking-normal text-black">
-                No bookings yet
+                {t("customer.noBookings")}
               </h2>
               <p className="mt-3 text-[16px] leading-6 tracking-normal text-[#6d737c]">
-                Your service bookings will appear here after you book a shop.
+                {t("customer.noBookingsDescription")}
               </p>
             </div>
           ) : null}
@@ -110,18 +114,22 @@ export default function CustomerBookingsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h2 className="text-[18px] font-extrabold leading-6 tracking-normal text-black">
-                        {booking.serviceLabel}
+                        {categoryLabelBySlug(
+                          booking.categorySlug,
+                          booking.serviceLabel,
+                          language,
+                        )}
                       </h2>
                       <p className="mt-1 text-[14px] leading-5 text-[#6d737c]">
                         {booking.shopCompanyName}
                       </p>
                     </div>
                     <span className="rounded-full bg-[#fff4df] px-3 py-1 text-[12px] font-semibold capitalize tracking-normal text-[#d88708]">
-                      {booking.status}
+                      {t(`status.${booking.status}` as TranslationKey)}
                     </span>
                   </div>
                   <p className="mt-3 text-[14px] leading-5 text-[#6d737c]">
-                    Provider: {booking.providerPhone}
+                    {t("common.provider")}: {booking.providerPhone}
                   </p>
                 </article>
               ))}

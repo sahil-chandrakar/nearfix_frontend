@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { CustomerShell } from "@/components/customer/customer-shell";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
 import {
@@ -15,6 +16,7 @@ import { useRouter } from "next/navigation";
 
 export default function CustomerProfilePage() {
   const router = useRouter();
+  const { language, t } = useI18n();
   const { clearToken, isReady, token } = useAuthToken();
   const [user, setUser] = useState<User | null>(null);
   const [name, setName] = useState("");
@@ -91,7 +93,7 @@ export default function CustomerProfilePage() {
       setUser(updatedUser);
       setName(updatedUser.fullName ?? "");
       setPhone(updatedUser.phone ?? "");
-      setMessage("Profile updated.");
+      setMessage(language === "hi" ? "प्रोफाइल अपडेट हो गई।" : "Profile updated.");
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
@@ -107,13 +109,13 @@ export default function CustomerProfilePage() {
     <CustomerShell>
       <div className="mx-auto w-full max-w-[492px] px-6 pb-10 pt-8 sm:max-w-[536px] sm:px-8 md:max-w-[880px] md:px-10">
         <h1 className="text-[26px] font-extrabold leading-tight tracking-normal text-black sm:text-[30px] md:text-[35px]">
-          My Profile
+          {t("customer.profileTitle")}
         </h1>
 
         <section className="mt-7 rounded-xl border border-[#e7ecef] bg-white px-5 py-7 shadow-[0_2px_10px_rgba(15,23,42,0.07)] sm:px-6 sm:py-8">
           {isLoading ? (
             <p className="text-[17px] leading-7 text-[#6d737c]">
-              Loading profile...
+              {t("common.loading")}
             </p>
           ) : null}
 
@@ -141,26 +143,26 @@ export default function CustomerProfilePage() {
 
               <div className="mt-7 flex flex-col gap-5">
                 <label className="block text-[15px] font-semibold leading-none tracking-normal text-[#2f3338]">
-                  Name
+                  {t("common.name")}
                   <input
                     className="mt-3 h-[50px] w-full rounded-lg border border-[#e7ecef] bg-white px-4 text-[16px] tracking-normal text-black outline-none transition placeholder:text-[#9aa0a6] focus:border-[#f9a21a] focus:ring-2 focus:ring-[#fff0d4]"
                     minLength={2}
                     onChange={(event) => setName(event.target.value)}
-                    placeholder="Enter your name"
+                    placeholder={t("common.name")}
                     required
                     value={name}
                   />
                 </label>
 
                 <label className="block text-[15px] font-semibold leading-none tracking-normal text-[#2f3338]">
-                  Mobile Number
+                  {t("common.mobileNumber")}
                   <input
                     className="mt-3 h-[50px] w-full rounded-lg border border-[#e7ecef] bg-white px-4 text-[16px] tracking-normal text-black outline-none transition placeholder:text-[#9aa0a6] focus:border-[#f9a21a] focus:ring-2 focus:ring-[#fff0d4]"
                     inputMode="numeric"
                     maxLength={10}
                     onChange={(event) => setPhone(event.target.value)}
                     pattern="[0-9]{10}"
-                    placeholder="10-digit mobile number"
+                    placeholder={t("auth.phonePlaceholder")}
                     required
                     type="tel"
                     value={phone}
@@ -185,7 +187,7 @@ export default function CustomerProfilePage() {
                 disabled={isSaving}
                 type="submit"
               >
-                {isSaving ? "Saving..." : "Update Profile"}
+                {isSaving ? t("common.loading") : t("customer.updateProfile")}
               </button>
 
               <button
@@ -193,7 +195,7 @@ export default function CustomerProfilePage() {
                 onClick={handleLogout}
                 type="button"
               >
-                Logout
+                {t("common.logout")}
               </button>
             </form>
           ) : null}

@@ -10,10 +10,13 @@ import {
   AdminStatusBadge,
   formatAdminDate,
 } from "@/components/admin/admin-shell";
+import { ResetPasswordModal } from "@/components/admin/reset-password-modal";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
 import {
   getAdminProviders,
+  resetAdminUserPassword,
   updateAdminUserActive,
   updateAdminProviderStatus,
 } from "@/services/admin-service";
@@ -22,6 +25,7 @@ import type { AdminProvider } from "@/types/admin";
 type StatusFilter = "all" | "pending" | "approved" | "rejected";
 
 export default function AdminProvidersPage() {
+  const { t } = useI18n();
   const { token } = useAuthToken();
   const [providers, setProviders] = useState<AdminProvider[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -29,6 +33,8 @@ export default function AdminProvidersPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [resetTarget, setResetTarget] = useState<AdminProvider | null>(null);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   function loadProviders() {
     if (!token) {
@@ -43,9 +49,9 @@ export default function AdminProvidersPage() {
       })
       .catch((caughtError) => {
         setError(
-          caughtError instanceof ApiError
-            ? caughtError.message
-            : "Unable to load providers.",
+            caughtError instanceof ApiError
+              ? caughtError.message
+              : t("admin.loadingProviders"),
         );
       })
       .finally(() => setIsLoading(false));
@@ -67,10 +73,10 @@ export default function AdminProvidersPage() {
 
     const reason =
       verificationStatus === "rejected"
-        ? window.prompt("Enter rejection reason for provider:")
+        ? window.prompt(t("admin.enterProviderRejectionReason"))
         : undefined;
     if (verificationStatus === "rejected" && !reason?.trim()) {
-      setError("Rejection reason is required.");
+      setError(t("admin.rejectionReasonRequired"));
       return;
     }
 
@@ -84,15 +90,15 @@ export default function AdminProvidersPage() {
       );
       setMessage(
         verificationStatus === "approved"
-          ? "Provider approved."
-          : "Provider rejected.",
+          ? t("admin.providerApproved")
+          : t("admin.providerRejected"),
       );
       setError("");
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to review provider.",
+          : t("common.update"),
       );
     }
   }
@@ -110,49 +116,68 @@ export default function AdminProvidersPage() {
             : item,
         ),
       );
-      setMessage(provider.userIsActive ? "Provider suspended." : "Provider restored.");
+      setMessage(
+        provider.userIsActive
+          ? t("admin.providerSuspended")
+          : t("admin.providerRestored"),
+      );
       setError("");
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to update provider account.",
+          : t("common.update"),
       );
+    }
+  }
+
+  async function handlePasswordReset(newPassword: string) {
+    if (!token || !resetTarget) {
+      return;
+    }
+    setIsResettingPassword(true);
+    try {
+      await resetAdminUserPassword(token, resetTarget.userId, newPassword);
+      setMessage(`${t("common.resetPassword")}: ${resetTarget.shopCompanyName}.`);
+      setError("");
+      setResetTarget(null);
+    } finally {
+      setIsResettingPassword(false);
     }
   }
 
   return (
     <AdminShell>
       <AdminPageHeader
-        subtitle="Approve, reject, search, and inspect provider shops."
-        title="Providers"
+        subtitle={t("admin.providersSubtitle")}
+        title={t("common.providers")}
       />
 
       <AdminCard className="mb-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-end">
           <label className="flex-1 text-[14px] font-semibold text-[#2f3338]">
-            Search
+            {t("common.search")}
             <input
               className="mt-2 h-11 w-full rounded-lg border border-[#e7ecef] px-4 text-[14px] outline-none focus:border-[#f9a21a] focus:ring-2 focus:ring-[#fff0d4]"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Shop, owner, phone, email"
+              placeholder={t("admin.searchPlaceholderProviders")}
               value={query}
             />
           </label>
           <label className="text-[14px] font-semibold text-[#2f3338]">
-            Status
+            {t("common.status")}
             <select
               className="mt-2 h-11 w-full rounded-lg border border-[#e7ecef] px-4 text-[14px] outline-none focus:border-[#f9a21a] md:w-[180px]"
               onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
               value={statusFilter}
             >
-              <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
+              <option value="all">{t("common.all")}</option>
+              <option value="pending">{t("status.pending")}</option>
+              <option value="approved">{t("status.approved")}</option>
+              <option value="rejected">{t("status.rejected")}</option>
             </select>
           </label>
-          <AdminButton onClick={loadProviders}>Apply</AdminButton>
+          <AdminButton onClick={loadProviders}>{t("common.apply")}</AdminButton>
         </div>
       </AdminCard>
 
@@ -169,9 +194,9 @@ export default function AdminProvidersPage() {
 
       <div className="grid gap-4">
         {isLoading ? (
-          <AdminCard>Loading providers...</AdminCard>
+          <AdminCard>{t("admin.loadingProviders")}</AdminCard>
         ) : providers.length === 0 ? (
-          <AdminCard>No providers found.</AdminCard>
+          <AdminCard>{t("admin.noProvidersFound")}</AdminCard>
         ) : (
           providers.map((provider) => (
             <AdminCard key={provider.id}>
@@ -188,12 +213,13 @@ export default function AdminProvidersPage() {
                     {provider.ownerName} • {provider.whatsappMobileNumber} • {provider.email}
                   </p>
                   <p className="mt-1 text-[13px] text-[#8a9098]">
-                    Categories: {provider.categorySlugs.length || 0} • Registered{" "}
+                    {t("common.categories")}: {provider.categorySlugs.length || 0} &bull;{" "}
+                    {t("admin.registered")}{" "}
                     {formatAdminDate(provider.createdAt)}
                   </p>
                   {provider.rejectionReason ? (
                     <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-[13px] text-red-600">
-                      Rejection: {provider.rejectionReason}
+                      {t("admin.rejection")}: {provider.rejectionReason}
                     </p>
                   ) : null}
                 </div>
@@ -202,26 +228,32 @@ export default function AdminProvidersPage() {
                     className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[#e7ecef] px-4 text-[14px] font-semibold text-[#2f3338] transition hover:border-[#f9a21a]"
                     href={`/admin/providers/${provider.id}`}
                   >
-                    View
+                    {t("common.view")}
                   </Link>
                   <AdminButton
                     disabled={provider.verificationStatus === "approved"}
                     onClick={() => reviewProvider(provider, "approved")}
                   >
-                    Approve
+                    {t("common.approve")}
                   </AdminButton>
                   <AdminButton
                     disabled={provider.verificationStatus === "rejected"}
                     onClick={() => reviewProvider(provider, "rejected")}
                     tone="danger"
                   >
-                    Reject
+                    {t("common.reject")}
                   </AdminButton>
                   <AdminButton
                     onClick={() => toggleProviderActive(provider)}
                     tone={provider.userIsActive ? "danger" : "secondary"}
                   >
-                    {provider.userIsActive ? "Suspend" : "Restore"}
+                    {provider.userIsActive ? t("common.suspend") : t("common.restore")}
+                  </AdminButton>
+                  <AdminButton
+                    onClick={() => setResetTarget(provider)}
+                    tone="secondary"
+                  >
+                    {t("common.resetPassword")}
                   </AdminButton>
                 </div>
               </div>
@@ -229,6 +261,14 @@ export default function AdminProvidersPage() {
           ))
         )}
       </div>
+
+      <ResetPasswordModal
+        isOpen={resetTarget !== null}
+        isSubmitting={isResettingPassword}
+        onClose={() => setResetTarget(null)}
+        onSubmit={handlePasswordReset}
+        targetLabel={resetTarget?.shopCompanyName ?? t("common.provider")}
+      />
     </AdminShell>
   );
 }

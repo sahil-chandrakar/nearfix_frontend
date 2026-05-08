@@ -5,9 +5,12 @@ import {
   ProviderCard,
   ProviderPageFrame,
 } from "@/components/provider/provider-shell";
+import { useI18n } from "@/components/i18n/language-provider";
 import { env } from "@/config/env";
 import { useAuthToken } from "@/hooks/use-auth-token";
+import type { TranslationKey } from "@/lib/i18n";
 import { ApiError } from "@/lib/http-client";
+import { categoryLabelBySlug } from "@/lib/localized-labels";
 import {
   getProviderBookings,
   getProviderCategories,
@@ -91,10 +94,13 @@ function DetailIcon({ name }: { name: "phone" | "location" | "x" | "check" }) {
   );
 }
 
-function formatDistance(distanceKm: number | null) {
+function formatDistance(
+  distanceKm: number | null,
+  t: (key: TranslationKey, values?: Record<string, string | number>) => string,
+) {
   return distanceKm === null
-    ? "Distance unavailable"
-    : `${distanceKm} km away`;
+    ? t("customer.distanceUnavailable")
+    : t("customer.distanceKm", { distance: distanceKm });
 }
 
 function playBookingSound() {
@@ -137,15 +143,23 @@ function BookingCard({
   onDecline: (booking: ProviderBooking) => void;
   status: DashboardStatus;
 }) {
+  const { language, t } = useI18n();
   const isBusy = busyBookingId === booking.id;
+  const serviceLabel = categoryLabelBySlug(
+    booking.categorySlug,
+    booking.serviceLabel,
+    language,
+  );
 
   return (
     <ProviderCard>
       <h2 className="text-[22px] font-extrabold leading-tight tracking-normal text-black sm:text-[26px]">
-        {booking.serviceLabel}
+        {serviceLabel}
       </h2>
       <p className="mt-2 text-[15px] leading-6 tracking-normal text-[#7a7f86] sm:text-[16px]">
-        {status === "pending" ? "New service request" : "Declined booking"}
+        {status === "pending"
+          ? t("provider.newServiceRequest")
+          : t("provider.declinedBooking")}
       </p>
 
       <div className="mt-6 flex flex-col gap-4 text-[16px] leading-6 tracking-normal text-[#2f3338] sm:text-[18px] sm:leading-7">
@@ -153,13 +167,16 @@ function BookingCard({
           <span className="text-[#7a7f86]">
             <DetailIcon name="phone" />
           </span>
-          <span>Customer: {booking.customerPhone ?? "Unavailable"}</span>
+          <span>
+            {t("provider.customerLabel")}:{" "}
+            {booking.customerPhone ?? t("common.unavailable")}
+          </span>
         </p>
         <p className="flex items-center gap-4">
           <span className="text-[#7a7f86]">
             <DetailIcon name="location" />
           </span>
-          <span>{formatDistance(booking.distanceKm)}</span>
+          <span>{formatDistance(booking.distanceKm, t)}</span>
         </p>
       </div>
 
@@ -172,7 +189,7 @@ function BookingCard({
             type="button"
           >
             <DetailIcon name="x" />
-            Decline
+            {t("common.decline")}
           </button>
           <button
             className="flex h-[46px] items-center justify-center gap-2 rounded-lg bg-[#f9a21a] px-4 text-[15px] font-semibold tracking-normal text-white transition hover:bg-[#ee9914] disabled:cursor-not-allowed disabled:bg-[#f7c982] sm:h-[50px] sm:gap-3 sm:text-[16px]"
@@ -181,7 +198,7 @@ function BookingCard({
             type="button"
           >
             <DetailIcon name="check" />
-            Accept
+            {t("common.accept")}
           </button>
         </div>
       ) : null}
@@ -190,6 +207,7 @@ function BookingCard({
 }
 
 export default function ProviderDashboardPage() {
+  const { language, t } = useI18n();
   const router = useRouter();
   const { isReady, token } = useAuthToken();
   const [activeStatus, setActiveStatus] = useState<DashboardStatus>("pending");
@@ -242,7 +260,7 @@ export default function ProviderDashboardPage() {
           setError(
             caughtError instanceof ApiError
               ? caughtError.message
-              : "Unable to load bookings.",
+              : t("common.bookings"),
           );
         }
       })
@@ -255,7 +273,7 @@ export default function ProviderDashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [activeStatus, isReady, token]);
+  }, [activeStatus, isReady, t, token]);
 
   useEffect(() => {
     if (!isReady || !token) {
@@ -318,7 +336,7 @@ export default function ProviderDashboardPage() {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to update booking.",
+          : t("common.update"),
       );
     } finally {
       setBusyBookingId(null);
@@ -326,21 +344,27 @@ export default function ProviderDashboardPage() {
   }
 
   return (
-    <ProviderPageFrame title="New Bookings">
+    <ProviderPageFrame title={t("provider.newBookings")}>
       {toastBooking ? (
         <div className="fixed left-4 right-4 top-24 z-40 mx-auto max-w-[460px] rounded-xl border border-[#f3d99b] bg-white px-5 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.18)]">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[15px] font-semibold text-[#f9a21a]">
-                New booking received
+                {t("provider.newBookingReceived")}
               </p>
               <p className="mt-1 text-[15px] leading-5 text-[#4d525a]">
-                {toastBooking.serviceLabel} from{" "}
-                {toastBooking.customerPhone ?? "customer"}
+                {t("provider.newBookingFrom", {
+                  service: categoryLabelBySlug(
+                    toastBooking.categorySlug,
+                    toastBooking.serviceLabel,
+                    language,
+                  ),
+                  customer: toastBooking.customerPhone ?? t("common.customer"),
+                })}
               </p>
             </div>
             <button
-              aria-label="Close booking alert"
+              aria-label={t("common.close")}
               className="text-[24px] leading-none text-[#6d737c]"
               onClick={() => setToastBooking(null)}
               type="button"
@@ -363,7 +387,7 @@ export default function ProviderDashboardPage() {
             onClick={() => setActiveStatus(statusOption)}
             type="button"
           >
-            {statusOption === "pending" ? "Pending" : "Declined"}
+            {t(`status.${statusOption}` as TranslationKey)}
           </button>
         ))}
       </div>
@@ -378,7 +402,7 @@ export default function ProviderDashboardPage() {
         {isLoading ? (
           <ProviderCard>
             <p className="text-[16px] leading-7 text-[#6d737c]">
-              Loading bookings...
+              {t("common.loading")}
             </p>
           </ProviderCard>
         ) : null}
@@ -388,20 +412,20 @@ export default function ProviderDashboardPage() {
             <div className="text-center">
               <h2 className="text-[20px] font-extrabold leading-tight tracking-normal text-black sm:text-[23px]">
                 {activeStatus === "pending"
-                  ? "अभी कोई नई बुकिंग नहीं है।"
-                  : "No declined bookings"}
+                  ? t("provider.noNewBookings")
+                  : t("provider.noDeclinedBookings")}
               </h2>
               <p className="mx-auto mt-3 max-w-[340px] text-[15px] leading-6 tracking-normal text-[#6d737c] sm:text-[16px] sm:leading-7">
                 {activeStatus === "pending"
-                  ? "New bookings from customers will appear here in real-time."
-                  : "Declined booking history will appear here."}
+                  ? t("provider.noNewBookingsDescription")
+                  : t("provider.declinedHistoryDescription")}
               </p>
               {activeStatus === "pending" ? (
                 <Link
                   className="mx-auto mt-5 flex h-[46px] max-w-[220px] items-center justify-center rounded-lg bg-[#f9a21a] px-5 text-[15px] font-semibold tracking-normal text-white transition hover:bg-[#ee9914] sm:h-[48px] sm:text-[16px]"
                   href={categoryCount === 0 ? "/provider/categories" : "/provider/my-shop"}
                 >
-                  {categoryCount === 0 ? "Select Categories" : "My Shop"}
+                  {categoryCount === 0 ? t("provider.selectCategories") : t("provider.myShop")}
                 </Link>
               ) : null}
             </div>

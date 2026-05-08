@@ -5,8 +5,11 @@ import {
   ProviderCard,
   ProviderPageFrame,
 } from "@/components/provider/provider-shell";
+import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
+import type { TranslationKey } from "@/lib/i18n";
 import { ApiError } from "@/lib/http-client";
+import { categoryLabelBySlug } from "@/lib/localized-labels";
 import { getProviderBookings } from "@/services/auth-service";
 import type { ProviderBooking } from "@/types/auth";
 import { useRouter } from "next/navigation";
@@ -66,13 +69,17 @@ function DetailIcon({ name }: { name: "user" | "location" | "phone" }) {
   );
 }
 
-function formatDistance(distanceKm: number | null) {
+function formatDistance(
+  distanceKm: number | null,
+  t: (key: TranslationKey, values?: Record<string, string | number>) => string,
+) {
   return distanceKm === null
-    ? "Distance unavailable"
-    : `${distanceKm} km away`;
+    ? t("customer.distanceUnavailable")
+    : t("customer.distanceKm", { distance: distanceKm });
 }
 
 export default function ProviderAcceptedBookingsPage() {
+  const { language, t } = useI18n();
   const router = useRouter();
   const { isReady, token } = useAuthToken();
   const [bookings, setBookings] = useState<ProviderBooking[]>([]);
@@ -103,7 +110,7 @@ export default function ProviderAcceptedBookingsPage() {
           setError(
             caughtError instanceof ApiError
               ? caughtError.message
-              : "Unable to load accepted bookings.",
+              : t("provider.acceptedBookings"),
           );
         }
       })
@@ -116,15 +123,15 @@ export default function ProviderAcceptedBookingsPage() {
     return () => {
       isMounted = false;
     };
-  }, [isReady, router, token]);
+  }, [isReady, router, t, token]);
 
   return (
-    <ProviderPageFrame title="Accepted Bookings">
+    <ProviderPageFrame title={t("provider.acceptedBookings")}>
       <section className="flex flex-col gap-5">
         {isLoading ? (
           <ProviderCard>
             <p className="text-[16px] leading-7 text-[#6d737c]">
-              Loading accepted bookings...
+              {t("common.loading")}
             </p>
           </ProviderCard>
         ) : null}
@@ -139,10 +146,10 @@ export default function ProviderAcceptedBookingsPage() {
           <ProviderCard>
             <div className="text-center">
               <h2 className="text-[20px] font-extrabold tracking-normal text-black sm:text-[22px]">
-                No accepted bookings
+                {t("provider.noAcceptedBookings")}
               </h2>
               <p className="mx-auto mt-3 max-w-[340px] text-[15px] leading-6 tracking-normal text-[#6d737c] sm:text-[16px] sm:leading-7">
-                Accepted customer requests will appear here.
+                {t("provider.acceptedEmptyDescription")}
               </p>
             </div>
           </ProviderCard>
@@ -151,10 +158,14 @@ export default function ProviderAcceptedBookingsPage() {
         {bookings.map((booking) => (
           <ProviderCard key={booking.id}>
             <h2 className="text-[22px] font-extrabold leading-tight tracking-normal text-black sm:text-[26px]">
-              {booking.serviceLabel}
+              {categoryLabelBySlug(
+                booking.categorySlug,
+                booking.serviceLabel,
+                language,
+              )}
             </h2>
             <p className="mt-2 text-[15px] leading-6 tracking-normal text-[#7a7f86] sm:text-[16px]">
-              Accepted booking - ready to call
+              {t("provider.acceptedReady")}
             </p>
 
             <div className="mt-6 flex flex-col gap-4 text-[16px] leading-6 tracking-normal text-[#2f3338] sm:text-[18px] sm:leading-7">
@@ -162,13 +173,16 @@ export default function ProviderAcceptedBookingsPage() {
                 <span className="text-[#7a7f86]">
                   <DetailIcon name="user" />
                 </span>
-                <span>Customer: {booking.customerPhone ?? "Unavailable"}</span>
+                <span>
+                  {t("provider.customerLabel")}:{" "}
+                  {booking.customerPhone ?? t("common.unavailable")}
+                </span>
               </p>
               <p className="flex items-center gap-4">
                 <span className="text-[#7a7f86]">
                   <DetailIcon name="location" />
                 </span>
-                <span>{formatDistance(booking.distanceKm)}</span>
+                <span>{formatDistance(booking.distanceKm, t)}</span>
               </p>
             </div>
 
@@ -177,7 +191,7 @@ export default function ProviderAcceptedBookingsPage() {
               href={`tel:${booking.customerPhone ?? ""}`}
             >
               <DetailIcon name="phone" />
-              Call Customer
+              {t("common.callCustomer")}
             </a>
           </ProviderCard>
         ))}
