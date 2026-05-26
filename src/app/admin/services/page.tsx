@@ -11,8 +11,10 @@ import {
 import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
+import { serviceCategoryBySlug } from "@/lib/service-categories";
 import {
   createAdminService,
+  deleteAdminService,
   getAdminServices,
   updateAdminService,
 } from "@/services/admin-service";
@@ -28,6 +30,7 @@ export default function AdminServicesPage() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   function loadServices() {
     if (!token) {
@@ -122,6 +125,33 @@ export default function AdminServicesPage() {
     setServices((current) =>
       current.map((item) => (item.id === updated.id ? updated : item)),
     );
+  }
+
+  async function removeService(service: AdminService) {
+    if (
+      !token ||
+      service.id === null ||
+      serviceCategoryBySlug[service.slug]
+    ) {
+      return;
+    }
+
+    setError("");
+    setMessage("");
+    try {
+      await deleteAdminService(token, service.id);
+      setServices((current) =>
+        current.filter((item) => item.id !== service.id),
+      );
+      setPendingDeleteId(null);
+      setMessage("Service deleted.");
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : "Unable to delete service.",
+      );
+    }
   }
 
   return (
@@ -234,6 +264,28 @@ export default function AdminServicesPage() {
                   <AdminButton onClick={() => toggleService(service)} tone="secondary">
                     {service.isActive ? t("common.disable") : t("common.enable")}
                   </AdminButton>
+                  {!serviceCategoryBySlug[service.slug] && service.id !== null ? (
+                    pendingDeleteId === service.id ? (
+                      <>
+                        <AdminButton
+                          onClick={() => setPendingDeleteId(null)}
+                          tone="secondary"
+                        >
+                          Cancel
+                        </AdminButton>
+                        <AdminButton onClick={() => removeService(service)} tone="danger">
+                          Confirm Delete
+                        </AdminButton>
+                      </>
+                    ) : (
+                      <AdminButton
+                        onClick={() => setPendingDeleteId(service.id)}
+                        tone="danger"
+                      >
+                        Delete
+                      </AdminButton>
+                    )
+                  ) : null}
                 </div>
               </div>
             </AdminCard>

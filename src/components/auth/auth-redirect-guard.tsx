@@ -3,7 +3,11 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useAuthToken } from "@/hooks/use-auth-token";
-import { getCurrentUser, getProviderCategories } from "@/services/auth-service";
+import {
+  getCurrentUser,
+  getProviderCategories,
+  getProviderProfile,
+} from "@/services/auth-service";
 import { useRouter } from "next/navigation";
 
 type AuthRedirectGuardProps = {
@@ -53,14 +57,21 @@ export function AuthRedirectGuard({ children }: AuthRedirectGuardProps) {
 
         if (user.role === "provider") {
           try {
-            const categories = await getProviderCategories(token as string);
+            const [profile, categories] = await Promise.all([
+              getProviderProfile(token as string),
+              getProviderCategories(token as string),
+            ]);
+            if (profile.verificationStatus !== "approved") {
+              router.replace("/provider/status");
+              return;
+            }
             router.replace(
               categories.categorySlugs.length > 0
                 ? "/provider/dashboard"
                 : "/provider/categories",
             );
           } catch {
-            router.replace("/provider/dashboard");
+            router.replace("/provider/status");
           }
           return;
         }

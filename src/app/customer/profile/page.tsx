@@ -73,7 +73,7 @@ export default function CustomerProfilePage() {
     }
 
     clearToken();
-    router.push("/");
+    window.location.replace("/");
   }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {

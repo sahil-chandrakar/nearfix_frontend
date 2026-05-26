@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { CustomerShell } from "@/components/customer/customer-shell";
 import { ServiceIcon } from "@/components/customer/service-icon";
@@ -152,14 +153,17 @@ export default function CustomerHomePage() {
             className="flex transition-transform duration-500 ease-out"
             style={{ transform: `translateX(-${activeBannerIndex * 100}%)` }}
           >
-            {banners.map((banner) => (
+            {banners.map((banner, index) => (
               <div
                 className="relative h-[184px] min-w-full overflow-hidden bg-slate-700 sm:h-[214px] md:h-[252px]"
                 key={banner.src}
               >
-                <img
+                <Image
                   alt={banner.alt}
-                  className="h-full w-full object-cover"
+                  className="object-cover"
+                  fill
+                  priority={index === 0}
+                  sizes="(min-width: 768px) 880px, (min-width: 640px) 536px, 492px"
                   src={banner.src}
                 />
               </div>

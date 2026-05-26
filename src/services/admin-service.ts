@@ -240,6 +240,13 @@ export function updateAdminService(
   });
 }
 
+export function deleteAdminService(accessToken: string, serviceId: number) {
+  return apiFetch<void>(`/admin/services/${serviceId}`, {
+    method: "DELETE",
+    headers: authHeaders(accessToken),
+  });
+}
+
 export async function fetchAdminBlobUrl(accessToken: string, path: string) {
   const response = await fetch(apiUrl(path), {
     headers: authHeaders(accessToken),

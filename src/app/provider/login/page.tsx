@@ -14,7 +14,11 @@ import {
 import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
-import { getProviderCategories, loginProvider } from "@/services/auth-service";
+import {
+  getProviderCategories,
+  getProviderProfile,
+  loginProvider,
+} from "@/services/auth-service";
 import { useRouter } from "next/navigation";
 
 export default function ProviderLoginPage() {
@@ -37,7 +41,14 @@ export default function ProviderLoginPage() {
     try {
       const token = await loginProvider({ phone, password });
       setToken(token.accessToken);
-      const categories = await getProviderCategories(token.accessToken);
+      const [profile, categories] = await Promise.all([
+        getProviderProfile(token.accessToken),
+        getProviderCategories(token.accessToken),
+      ]);
+      if (profile.verificationStatus !== "approved") {
+        router.push("/provider/status");
+        return;
+      }
       router.push(
         categories.categorySlugs.length > 0
           ? "/provider/dashboard"

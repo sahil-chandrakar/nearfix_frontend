@@ -5,7 +5,7 @@ import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { logoutUser } from "@/services/auth-service";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 type MenuIconName = "home" | "help" | "about" | "logout";
@@ -221,7 +221,6 @@ function SideMenu({
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const router = useRouter();
   const { clearToken, token } = useAuthToken();
 
   function handleLogout() {
@@ -233,7 +232,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
 
     clearToken();
     setIsMenuOpen(false);
-    router.push("/");
+    window.location.replace("/");
   }
 
   return (

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
-import { getCurrentUser } from "@/services/auth-service";
+import { getCurrentUser, getProviderProfile } from "@/services/auth-service";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -40,13 +40,23 @@ export function ProviderShell({ children }: { children: ReactNode }) {
     let isMounted = true;
 
     getCurrentUser(token)
-      .then((user) => {
+      .then(async (user) => {
         if (!isMounted) {
           return;
         }
 
         if (user.role !== "provider") {
           router.replace("/");
+          return;
+        }
+
+        const profile = await getProviderProfile(token);
+        if (!isMounted) {
+          return;
+        }
+
+        if (profile.verificationStatus !== "approved") {
+          router.replace("/provider/status");
           return;
         }
 

@@ -20,10 +20,6 @@ export default function ProviderStatusPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    router.replace("/provider/dashboard");
-  }, [router]);
-
-  useEffect(() => {
     if (!isReady) {
       return;
     }
@@ -95,18 +91,28 @@ export default function ProviderStatusPage() {
                 {t(`status.${profile.verificationStatus}` as TranslationKey)}
               </span>
             </p>
+            {profile.verificationStatus === "rejected" && profile.rejectionReason ? (
+              <p>
+                <span className="font-semibold text-black">
+                  {t("provider.rejectionReason")}:
+                </span>{" "}
+                {profile.rejectionReason}
+              </p>
+            ) : null}
             <p>
               <span className="font-semibold text-black">{t("common.categories")}:</span>{" "}
               {categoryCount > 0 ? categoryCount : t("provider.notSelected")}
             </p>
-            <a
-              className="flex h-[52px] items-center justify-center rounded-lg bg-[#f9a21a] px-5 text-[17px] font-semibold tracking-normal text-white transition hover:bg-[#ee9914]"
-              href="/provider/categories"
-            >
-              {categoryCount > 0
-                ? t("provider.manageCategories")
-                : t("provider.selectCategories")}
-            </a>
+            {profile.verificationStatus !== "rejected" ? (
+              <a
+                className="flex h-[52px] items-center justify-center rounded-lg bg-[#f9a21a] px-5 text-[17px] font-semibold tracking-normal text-white transition hover:bg-[#ee9914]"
+                href="/provider/categories"
+              >
+                {categoryCount > 0
+                  ? t("provider.manageCategories")
+                  : t("provider.selectCategories")}
+              </a>
+            ) : null}
           </div>
         ) : null}
       </AuthCard>

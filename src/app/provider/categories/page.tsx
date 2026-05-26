@@ -14,6 +14,7 @@ import {
 import {
   getCategories,
   getProviderCategories,
+  getProviderProfile,
   saveProviderCategories,
 } from "@/services/auth-service";
 import type { ApiServiceCategory } from "@/types/auth";
@@ -28,6 +29,9 @@ export default function ProviderCategoriesPage() {
     useState<ApiServiceCategory[]>([]);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [verificationStatus, setVerificationStatus] = useState<
+    "pending" | "approved" | "rejected"
+  >("pending");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,9 +47,17 @@ export default function ProviderCategoriesPage() {
 
     let isMounted = true;
 
-    Promise.all([getCategories(), getProviderCategories(token)])
-      .then(([apiCategories, categories]) => {
+    Promise.all([
+      getProviderProfile(token),
+      getCategories(),
+      getProviderCategories(token),
+    ])
+      .then(([profile, apiCategories, categories]) => {
         if (isMounted) {
+          if (profile.verificationStatus === "rejected") {
+            router.replace("/provider/status");
+            return;
+          }
           const categorySource =
             apiCategories.length > 0 ? apiCategories : serviceCategories;
           const validSlugs = new Set(
@@ -55,6 +67,7 @@ export default function ProviderCategoriesPage() {
           setSelectedSlugs(
             categories.categorySlugs.filter((slug) => validSlugs.has(slug)),
           );
+          setVerificationStatus(profile.verificationStatus);
           setError("");
         }
       })
@@ -100,7 +113,11 @@ export default function ProviderCategoriesPage() {
       const categories = await saveProviderCategories(token, selectedSlugs);
       setSelectedSlugs(categories.categorySlugs);
       setMessage(t("provider.categoriesSaved"));
-      router.push("/provider/dashboard");
+      router.push(
+        verificationStatus === "approved"
+          ? "/provider/dashboard"
+          : "/provider/status",
+      );
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
