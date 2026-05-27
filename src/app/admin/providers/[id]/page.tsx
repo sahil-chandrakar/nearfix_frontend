@@ -11,6 +11,7 @@ import {
   AdminStatusBadge,
   formatAdminDate,
 } from "@/components/admin/admin-shell";
+import { RejectionReasonModal } from "@/components/admin/rejection-reason-modal";
 import { ResetPasswordModal } from "@/components/admin/reset-password-modal";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
@@ -37,6 +38,8 @@ export default function AdminProviderDetailPage() {
   const [provider, setProvider] = useState<AdminProvider | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [isRejectProviderOpen, setIsRejectProviderOpen] = useState(false);
+  const [isReviewingProvider, setIsReviewingProvider] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
@@ -59,20 +62,20 @@ export default function AdminProviderDetailPage() {
       });
   }, [providerId, token]);
 
-  async function reviewProvider(verificationStatus: "approved" | "rejected") {
+  async function reviewProvider(
+    verificationStatus: "approved" | "rejected",
+    reason?: string,
+  ) {
     if (!token || !provider) {
       return;
     }
 
-    const reason =
-      verificationStatus === "rejected"
-        ? window.prompt("Enter rejection reason for provider:")
-        : undefined;
     if (verificationStatus === "rejected" && !reason?.trim()) {
       setError("Rejection reason is required.");
       return;
     }
 
+    setIsReviewingProvider(true);
     try {
       const updated = await updateAdminProviderStatus(token, provider.id, {
         reason: reason?.trim(),
@@ -85,12 +88,16 @@ export default function AdminProviderDetailPage() {
           : "Provider rejected.",
       );
       setError("");
+      setIsRejectProviderOpen(false);
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
           : "Unable to update provider.",
       );
+      throw caughtError;
+    } finally {
+      setIsReviewingProvider(false);
     }
   }
 
@@ -211,13 +218,15 @@ export default function AdminProviderDetailPage() {
             <div className="mt-6 flex flex-wrap gap-2">
               <AdminButton
                 disabled={provider.verificationStatus === "approved"}
-                onClick={() => reviewProvider("approved")}
+                onClick={() =>
+                  void reviewProvider("approved").catch(() => undefined)
+                }
               >
                 Approve Provider
               </AdminButton>
               <AdminButton
                 disabled={provider.verificationStatus === "rejected"}
-                onClick={() => reviewProvider("rejected")}
+                onClick={() => setIsRejectProviderOpen(true)}
                 tone="danger"
               >
                 Reject Provider
@@ -282,6 +291,15 @@ export default function AdminProviderDetailPage() {
         onClose={() => setIsResetPasswordOpen(false)}
         onSubmit={handlePasswordReset}
         targetLabel={provider?.shopCompanyName ?? "this provider"}
+      />
+      <RejectionReasonModal
+        description="Enter a clear reason so the provider knows what to fix."
+        isOpen={isRejectProviderOpen}
+        isSubmitting={isReviewingProvider}
+        onClose={() => setIsRejectProviderOpen(false)}
+        onSubmit={(reason) => reviewProvider("rejected", reason)}
+        targetLabel={provider?.shopCompanyName ?? "this provider"}
+        title="Reject Provider"
       />
     </AdminShell>
   );

@@ -9,6 +9,7 @@ import {
   AdminStatusBadge,
   formatAdminDate,
 } from "@/components/admin/admin-shell";
+import { RejectionReasonModal } from "@/components/admin/rejection-reason-modal";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { ApiError } from "@/lib/http-client";
 import {
@@ -34,6 +35,9 @@ export default function AdminDocumentsPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isReviewingDocument, setIsReviewingDocument] = useState(false);
+  const [rejectTarget, setRejectTarget] =
+    useState<AdminDocumentRequest | null>(null);
 
   function loadDocuments() {
     if (!token) {
@@ -83,34 +87,41 @@ export default function AdminDocumentsPage() {
   async function reviewRequest(
     request: AdminDocumentRequest,
     status: "approved" | "rejected",
+    reason?: string,
   ) {
     if (!token) {
       return;
     }
-    const reason =
-      status === "rejected"
-        ? window.prompt("Enter rejection reason for this document:")
-        : undefined;
     if (status === "rejected" && !reason?.trim()) {
       setError("Rejection reason is required.");
       return;
     }
+
+    setIsReviewingDocument(true);
     try {
       const updated = await reviewAdminDocument(token, request.id, {
         reason: reason?.trim(),
         status,
       });
       setDocuments((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
+        current
+          .map((item) => (item.id === updated.id ? updated : item))
+          .filter(
+            (item) => statusFilter === "all" || item.status === statusFilter,
+          ),
       );
       setMessage(status === "approved" ? "Document approved." : "Document rejected.");
       setError("");
+      setRejectTarget(null);
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
           : "Unable to review document.",
       );
+      throw caughtError;
+    } finally {
+      setIsReviewingDocument(false);
     }
   }
 
@@ -183,13 +194,17 @@ export default function AdminDocumentsPage() {
                   </AdminButton>
                   <AdminButton
                     disabled={request.status !== "pending"}
-                    onClick={() => reviewRequest(request, "approved")}
+                    onClick={() =>
+                      void reviewRequest(request, "approved").catch(
+                        () => undefined,
+                      )
+                    }
                   >
                     Approve
                   </AdminButton>
                   <AdminButton
                     disabled={request.status !== "pending"}
-                    onClick={() => reviewRequest(request, "rejected")}
+                    onClick={() => setRejectTarget(request)}
                     tone="danger"
                   >
                     Reject
@@ -200,6 +215,21 @@ export default function AdminDocumentsPage() {
           ))
         )}
       </div>
+      <RejectionReasonModal
+        description="Enter a clear reason so the provider knows what document needs to be replaced."
+        isOpen={rejectTarget !== null}
+        isSubmitting={isReviewingDocument}
+        onClose={() => setRejectTarget(null)}
+        onSubmit={(reason) =>
+          rejectTarget
+            ? reviewRequest(rejectTarget, "rejected", reason)
+            : Promise.resolve()
+        }
+        targetLabel={
+          rejectTarget ? documentLabels[rejectTarget.documentType] : "Document"
+        }
+        title="Reject Document"
+      />
     </AdminShell>
   );
 }

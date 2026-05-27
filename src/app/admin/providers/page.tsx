@@ -10,6 +10,7 @@ import {
   AdminStatusBadge,
   formatAdminDate,
 } from "@/components/admin/admin-shell";
+import { RejectionReasonModal } from "@/components/admin/rejection-reason-modal";
 import { ResetPasswordModal } from "@/components/admin/reset-password-modal";
 import { useI18n } from "@/components/i18n/language-provider";
 import { useAuthToken } from "@/hooks/use-auth-token";
@@ -33,6 +34,8 @@ export default function AdminProvidersPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isReviewingProvider, setIsReviewingProvider] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState<AdminProvider | null>(null);
   const [resetTarget, setResetTarget] = useState<AdminProvider | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
@@ -66,27 +69,31 @@ export default function AdminProvidersPage() {
   async function reviewProvider(
     provider: AdminProvider,
     verificationStatus: "approved" | "rejected",
+    reason?: string,
   ) {
     if (!token) {
       return;
     }
 
-    const reason =
-      verificationStatus === "rejected"
-        ? window.prompt(t("admin.enterProviderRejectionReason"))
-        : undefined;
     if (verificationStatus === "rejected" && !reason?.trim()) {
       setError(t("admin.rejectionReasonRequired"));
       return;
     }
 
+    setIsReviewingProvider(true);
     try {
       const updated = await updateAdminProviderStatus(token, provider.id, {
         reason: reason?.trim(),
         verificationStatus,
       });
       setProviders((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
+        current
+          .map((item) => (item.id === updated.id ? updated : item))
+          .filter(
+            (item) =>
+              statusFilter === "all" ||
+              item.verificationStatus === statusFilter,
+          ),
       );
       setMessage(
         verificationStatus === "approved"
@@ -94,12 +101,16 @@ export default function AdminProvidersPage() {
           : t("admin.providerRejected"),
       );
       setError("");
+      setRejectTarget(null);
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
           : t("common.update"),
       );
+      throw caughtError;
+    } finally {
+      setIsReviewingProvider(false);
     }
   }
 
@@ -232,13 +243,17 @@ export default function AdminProvidersPage() {
                   </Link>
                   <AdminButton
                     disabled={provider.verificationStatus === "approved"}
-                    onClick={() => reviewProvider(provider, "approved")}
+                    onClick={() =>
+                      void reviewProvider(provider, "approved").catch(
+                        () => undefined,
+                      )
+                    }
                   >
                     {t("common.approve")}
                   </AdminButton>
                   <AdminButton
                     disabled={provider.verificationStatus === "rejected"}
-                    onClick={() => reviewProvider(provider, "rejected")}
+                    onClick={() => setRejectTarget(provider)}
                     tone="danger"
                   >
                     {t("common.reject")}
@@ -268,6 +283,19 @@ export default function AdminProvidersPage() {
         onClose={() => setResetTarget(null)}
         onSubmit={handlePasswordReset}
         targetLabel={resetTarget?.shopCompanyName ?? t("common.provider")}
+      />
+      <RejectionReasonModal
+        description={t("admin.enterProviderRejectionReason")}
+        isOpen={rejectTarget !== null}
+        isSubmitting={isReviewingProvider}
+        onClose={() => setRejectTarget(null)}
+        onSubmit={(reason) =>
+          rejectTarget
+            ? reviewProvider(rejectTarget, "rejected", reason)
+            : Promise.resolve()
+        }
+        targetLabel={rejectTarget?.shopCompanyName ?? t("common.provider")}
+        title={t("common.reject")}
       />
     </AdminShell>
   );
