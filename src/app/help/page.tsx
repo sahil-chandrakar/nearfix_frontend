@@ -3,10 +3,10 @@
 import { useI18n } from "@/components/i18n/language-provider";
 import Link from "next/link";
 import {
-  SUPPORT_CONTACT,
-  SUPPORT_MAIL_HREF,
-  SUPPORT_TEL_HREF,
+  supportMailHref,
+  supportTelHref,
 } from "@/config/support";
+import { useSupportDetails } from "@/hooks/use-support-details";
 
 function BackIcon() {
   return (
@@ -62,7 +62,12 @@ function MailIcon() {
 }
 
 export default function HelpPage() {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
+  const { supportDetails } = useSupportDetails();
+  const helpHeading =
+    language === "hi" ? supportDetails.helpHeadingHi : supportDetails.helpHeadingEn;
+  const helpDescription =
+    language === "hi" ? supportDetails.helpDescriptionHi : supportDetails.helpDescriptionEn;
 
   return (
     <main>
@@ -85,27 +90,27 @@ export default function HelpPage() {
         <div className="mx-auto w-full max-w-[430px] md:max-w-[820px] lg:max-w-[1040px]">
           <article className="rounded-xl border border-[#e7ecef] bg-white px-6 py-7 shadow-[0_2px_12px_rgba(15,23,42,0.08)] md:max-w-2xl md:px-8 md:py-9">
             <h2 className="text-[25px] font-extrabold leading-tight tracking-normal text-black md:text-[30px]">
-              {t("help.heading")}
+              {helpHeading}
             </h2>
 
             <p className="mt-5 text-[16px] font-normal leading-7 tracking-normal text-[#2f3338] md:max-w-xl md:text-[18px] md:leading-8">
-              {t("help.description")}
+              {helpDescription}
             </p>
 
             <div className="mt-6 flex flex-col gap-5 text-[#6d737c]">
               <a
                 className="flex items-center gap-5 text-[16px] leading-none tracking-normal transition hover:text-[#f9a21a] md:text-[18px]"
-                href={SUPPORT_TEL_HREF}
+                href={supportTelHref(supportDetails)}
               >
                 <PhoneIcon />
-                <span>{SUPPORT_CONTACT.adminPhone}</span>
+                <span>{supportDetails.adminPhone}</span>
               </a>
               <a
                 className="flex items-center gap-5 break-all text-[16px] leading-6 tracking-normal transition hover:text-[#f9a21a] md:text-[18px]"
-                href={SUPPORT_MAIL_HREF}
+                href={supportMailHref(supportDetails)}
               >
                 <MailIcon />
-                <span>{SUPPORT_CONTACT.email}</span>
+                <span>{supportDetails.email}</span>
               </a>
             </div>
           </article>

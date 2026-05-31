@@ -1,6 +1,9 @@
 import type {
   ApiServiceCategory,
   Booking,
+  CustomerBrand,
+  CustomerBrandService,
+  CustomerBrandStore,
   ProviderDocumentChangeRequest,
   ProviderProfile,
 } from "@/types/auth";
@@ -73,3 +76,9 @@ export type AdminBooking = Booking;
 export type AdminDocumentRequest = ProviderDocumentChangeRequest;
 
 export type AdminService = ApiServiceCategory;
+
+export type AdminBrand = CustomerBrand;
+
+export type AdminBrandService = CustomerBrandService;
+
+export type AdminBrandStore = CustomerBrandStore;

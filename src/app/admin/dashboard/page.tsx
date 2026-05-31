@@ -14,6 +14,7 @@ import type { TranslationKey } from "@/lib/i18n";
 import { ApiError } from "@/lib/http-client";
 import { getAdminAuditLogs, getAdminSummary } from "@/services/admin-service";
 import type { AdminAuditLog, AdminSummary } from "@/types/admin";
+import { BOOKING_NOTIFICATION_EVENT } from "@/types/notifications";
 
 const statItems: { key: keyof AdminSummary; labelKey: TranslationKey; href: string }[] = [
   { key: "pendingProviders", labelKey: "admin.pendingProviders", href: "/admin/providers?status=pending" },
@@ -80,12 +81,14 @@ export default function AdminDashboardPage() {
     }
 
     window.addEventListener("focus", handleRefreshSignal);
+    window.addEventListener(BOOKING_NOTIFICATION_EVENT, handleRefreshSignal);
     document.addEventListener("visibilitychange", handleRefreshSignal);
 
     return () => {
       isMounted = false;
       window.clearInterval(intervalId);
       window.removeEventListener("focus", handleRefreshSignal);
+      window.removeEventListener(BOOKING_NOTIFICATION_EVENT, handleRefreshSignal);
       document.removeEventListener("visibilitychange", handleRefreshSignal);
     };
   }, [t, token]);

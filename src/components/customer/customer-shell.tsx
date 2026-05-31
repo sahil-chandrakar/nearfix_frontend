@@ -147,7 +147,9 @@ function CustomerBottomNav() {
         {bottomNavItems.map((item) => {
           const isActive =
             pathname === item.href ||
-            (item.href === "/customer/home" && pathname.startsWith("/customer/services"));
+            (item.href === "/customer/home" &&
+              (pathname.startsWith("/customer/services") ||
+                pathname.startsWith("/customer/brands")));
 
           return (
             <Link

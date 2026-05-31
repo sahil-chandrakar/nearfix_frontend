@@ -9,6 +9,10 @@ import { ApiError } from "@/lib/http-client";
 import { categoryLabelBySlug } from "@/lib/localized-labels";
 import { getCustomerBookings } from "@/services/auth-service";
 import type { CustomerBooking } from "@/types/auth";
+import {
+  BOOKING_NOTIFICATION_EVENT,
+  type BookingNotificationPayload,
+} from "@/types/notifications";
 import { useRouter } from "next/navigation";
 
 export default function CustomerBookingsPage() {
@@ -57,6 +61,42 @@ export default function CustomerBookingsPage() {
       isMounted = false;
     };
   }, [isReady, router, t, token]);
+
+  useEffect(() => {
+    function handleBookingNotification(event: Event) {
+      const payload = (event as CustomEvent<BookingNotificationPayload>).detail;
+      if (
+        payload.type !== "booking_accepted" &&
+        payload.type !== "booking_declined"
+      ) {
+        return;
+      }
+
+      setBookings((currentBookings) => {
+        if (
+          !currentBookings.some(
+            (currentBooking) => currentBooking.id === payload.booking.id,
+          )
+        ) {
+          return [payload.booking, ...currentBookings];
+        }
+
+        return currentBookings.map((currentBooking) =>
+          currentBooking.id === payload.booking.id
+            ? payload.booking
+            : currentBooking,
+        );
+      });
+    }
+
+    window.addEventListener(BOOKING_NOTIFICATION_EVENT, handleBookingNotification);
+    return () => {
+      window.removeEventListener(
+        BOOKING_NOTIFICATION_EVENT,
+        handleBookingNotification,
+      );
+    };
+  }, []);
 
   return (
     <CustomerShell>

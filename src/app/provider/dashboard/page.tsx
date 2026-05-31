@@ -6,7 +6,6 @@ import {
   ProviderPageFrame,
 } from "@/components/provider/provider-shell";
 import { useI18n } from "@/components/i18n/language-provider";
-import { env } from "@/config/env";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import type { TranslationKey } from "@/lib/i18n";
 import { ApiError } from "@/lib/http-client";
@@ -17,6 +16,10 @@ import {
   updateProviderBookingStatus,
 } from "@/services/auth-service";
 import type { BookingStatus, ProviderBooking } from "@/types/auth";
+import {
+  BOOKING_NOTIFICATION_EVENT,
+  type BookingNotificationPayload,
+} from "@/types/notifications";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -103,33 +106,6 @@ function formatDistance(
     : t("customer.distanceKm", { distance: distanceKm });
 }
 
-function playBookingSound() {
-  try {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
-    if (!AudioContextClass) {
-      return;
-    }
-
-    const audioContext = new AudioContextClass();
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.frequency.value = 880;
-    oscillator.type = "sine";
-    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.16, audioContext.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.38);
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.4);
-  } catch {
-    // Browsers can block audio until the page has a user gesture.
-  }
-}
-
 function BookingCard({
   booking,
   busyBookingId,
@@ -207,12 +183,11 @@ function BookingCard({
 }
 
 export default function ProviderDashboardPage() {
-  const { language, t } = useI18n();
+  const { t } = useI18n();
   const router = useRouter();
   const { isReady, token } = useAuthToken();
   const [activeStatus, setActiveStatus] = useState<DashboardStatus>("pending");
   const [bookings, setBookings] = useState<ProviderBooking[]>([]);
-  const [toastBooking, setToastBooking] = useState<ProviderBooking | null>(null);
   const [categoryCount, setCategoryCount] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -276,45 +251,34 @@ export default function ProviderDashboardPage() {
   }, [activeStatus, isReady, t, token]);
 
   useEffect(() => {
-    if (!isReady || !token) {
-      return;
-    }
+    function handleBookingNotification(event: Event) {
+      const payload = (event as CustomEvent<BookingNotificationPayload>).detail;
+      const incomingBooking = payload.booking;
+      if (payload.type !== "booking_created" || !incomingBooking) {
+        return;
+      }
 
-    const socket = new WebSocket(
-      `${env.wsBaseUrl}/provider/bookings/ws?token=${encodeURIComponent(token)}`,
-    );
-
-    socket.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data) as {
-          booking?: ProviderBooking;
-          type?: string;
-        };
-        const incomingBooking = payload.booking;
-        if (payload.type !== "booking_created" || !incomingBooking) {
-          return;
+      setBookings((currentBookings) => {
+        if (activeStatus !== "pending") {
+          return currentBookings;
         }
 
-        playBookingSound();
-        setToastBooking(incomingBooking);
-        setBookings((currentBookings) => {
-          if (activeStatus !== "pending") {
-            return currentBookings;
-          }
+        if (currentBookings.some((booking) => booking.id === incomingBooking.id)) {
+          return currentBookings;
+        }
 
-          if (currentBookings.some((booking) => booking.id === incomingBooking.id)) {
-            return currentBookings;
-          }
+        return [incomingBooking, ...currentBookings];
+      });
+    }
 
-          return [incomingBooking, ...currentBookings];
-        });
-      } catch {
-        // Ignore malformed WebSocket payloads.
-      }
+    window.addEventListener(BOOKING_NOTIFICATION_EVENT, handleBookingNotification);
+    return () => {
+      window.removeEventListener(
+        BOOKING_NOTIFICATION_EVENT,
+        handleBookingNotification,
+      );
     };
-
-    return () => socket.close();
-  }, [activeStatus, isReady, token]);
+  }, [activeStatus]);
 
   async function updateStatus(
     booking: ProviderBooking,
@@ -345,36 +309,6 @@ export default function ProviderDashboardPage() {
 
   return (
     <ProviderPageFrame title={t("provider.newBookings")}>
-      {toastBooking ? (
-        <div className="fixed left-4 right-4 top-24 z-40 mx-auto max-w-[460px] rounded-xl border border-[#f3d99b] bg-white px-5 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.18)]">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[15px] font-semibold text-[#f9a21a]">
-                {t("provider.newBookingReceived")}
-              </p>
-              <p className="mt-1 text-[15px] leading-5 text-[#4d525a]">
-                {t("provider.newBookingFrom", {
-                  service: categoryLabelBySlug(
-                    toastBooking.categorySlug,
-                    toastBooking.serviceLabel,
-                    language,
-                  ),
-                  customer: toastBooking.customerPhone ?? t("common.customer"),
-                })}
-              </p>
-            </div>
-            <button
-              aria-label={t("common.close")}
-              className="text-[24px] leading-none text-[#6d737c]"
-              onClick={() => setToastBooking(null)}
-              type="button"
-            >
-              &times;
-            </button>
-          </div>
-        </div>
-      ) : null}
-
       <div className="grid grid-cols-2 gap-2 rounded-xl bg-white p-1 shadow-[0_2px_10px_rgba(15,23,42,0.07)]">
         {(["pending", "declined"] as const).map((statusOption) => (
           <button

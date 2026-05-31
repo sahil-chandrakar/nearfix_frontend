@@ -5,6 +5,9 @@ import type {
   AdminAuditLog,
   AdminBanner,
   AdminBannerSettings,
+  AdminBrand,
+  AdminBrandService,
+  AdminBrandStore,
   AdminBooking,
   AdminCustomer,
   AdminDocumentRequest,
@@ -12,6 +15,7 @@ import type {
   AdminService,
   AdminSummary,
 } from "@/types/admin";
+import type { SupportDetails } from "@/types/support";
 
 type AdminStatus = "pending" | "approved" | "rejected";
 type BookingStatus = "pending" | "accepted" | "declined";
@@ -211,6 +215,23 @@ export function updateAdminBannerSettings(
   });
 }
 
+export function getAdminSupportDetails(accessToken: string) {
+  return apiFetch<SupportDetails>("/admin/support-details", {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function updateAdminSupportDetails(
+  accessToken: string,
+  payload: SupportDetails,
+) {
+  return apiFetch<SupportDetails>("/admin/support-details", {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getAdminServices(accessToken: string) {
   return apiFetch<AdminService[]>("/admin/services", {
     headers: authHeaders(accessToken),
@@ -244,6 +265,131 @@ export function deleteAdminService(accessToken: string, serviceId: number) {
   return apiFetch<void>(`/admin/services/${serviceId}`, {
     method: "DELETE",
     headers: authHeaders(accessToken),
+  });
+}
+
+export function getAdminBrands(accessToken: string) {
+  return apiFetch<AdminBrand[]>("/admin/brands", {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function createAdminBrand(accessToken: string, payload: { name: string }) {
+  return apiFetch<AdminBrand>("/admin/brands", {
+    method: "POST",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminBrand(
+  accessToken: string,
+  brandId: number,
+  payload: Partial<Pick<AdminBrand, "name" | "displayOrder" | "isActive">>,
+) {
+  return apiFetch<AdminBrand>(`/admin/brands/${brandId}`, {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getAdminBrandServices(accessToken: string, brandId: number) {
+  return apiFetch<AdminBrandService[]>(`/admin/brands/${brandId}/services`, {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export function createAdminBrandService(
+  accessToken: string,
+  brandId: number,
+  payload: { categorySlug: string },
+) {
+  return apiFetch<AdminBrandService>(`/admin/brands/${brandId}/services`, {
+    method: "POST",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAdminBrandService(
+  accessToken: string,
+  brandServiceId: number,
+  payload: Partial<Pick<AdminBrandService, "displayOrder" | "isActive">>,
+) {
+  return apiFetch<AdminBrandService>(`/admin/brand-services/${brandServiceId}`, {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getAdminBrandStores(accessToken: string, brandServiceId: number) {
+  return apiFetch<AdminBrandStore[]>(
+    `/admin/brand-services/${brandServiceId}/stores`,
+    { headers: authHeaders(accessToken) },
+  );
+}
+
+export function createAdminProviderBrandStore(
+  accessToken: string,
+  brandServiceId: number,
+  payload: { providerProfileId: number; displayOrder?: number },
+) {
+  return apiFetch<AdminBrandStore>(
+    `/admin/brand-services/${brandServiceId}/stores/provider`,
+    {
+      method: "POST",
+      headers: authHeaders(accessToken),
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function createAdminManualBrandStore(
+  accessToken: string,
+  brandServiceId: number,
+  payload: {
+    shopName: string;
+    contactName: string;
+    phone: string;
+    email?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    displayOrder?: number;
+  },
+) {
+  return apiFetch<AdminBrandStore>(
+    `/admin/brand-services/${brandServiceId}/stores/manual`,
+    {
+      method: "POST",
+      headers: authHeaders(accessToken),
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function updateAdminBrandStore(
+  accessToken: string,
+  storeId: number,
+  payload: Partial<
+    Pick<
+      AdminBrandStore,
+      | "shopName"
+      | "contactName"
+      | "phone"
+      | "email"
+      | "latitude"
+      | "longitude"
+      | "displayOrder"
+      | "isActive"
+    >
+  >,
+) {
+  return apiFetch<AdminBrandStore>(`/admin/brand-stores/${storeId}`, {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(payload),
   });
 }
 

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useI18n } from "@/components/i18n/language-provider";
+import { BookingNotificationCenter } from "@/components/notifications/booking-notification-center";
 import { useAuthToken } from "@/hooks/use-auth-token";
 import { logoutUser } from "@/services/auth-service";
 import Link from "next/link";
@@ -244,6 +245,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
         onClose={() => setIsMenuOpen(false)}
         onLogout={handleLogout}
       />
+      <BookingNotificationCenter />
       {children}
     </div>
   );

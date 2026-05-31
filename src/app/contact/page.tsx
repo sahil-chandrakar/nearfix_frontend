@@ -3,10 +3,10 @@
 import { useI18n } from "@/components/i18n/language-provider";
 import Link from "next/link";
 import {
-  SUPPORT_CONTACT,
-  SUPPORT_MAIL_HREF,
-  SUPPORT_TEL_HREF,
+  supportMailHref,
+  supportTelHref,
 } from "@/config/support";
+import { useSupportDetails } from "@/hooks/use-support-details";
 
 function BackIcon() {
   return (
@@ -63,6 +63,7 @@ function MailIcon() {
 
 export default function ContactPage() {
   const { t } = useI18n();
+  const { supportDetails } = useSupportDetails();
 
   return (
     <main>
@@ -94,7 +95,7 @@ export default function ContactPage() {
 
             <a
               className="mt-7 flex h-[52px] w-full items-center justify-center gap-3 rounded-lg bg-[#f9a21a] px-5 text-[17px] font-medium tracking-normal text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] transition hover:bg-[#ee9914] focus:outline-none focus:ring-2 focus:ring-[#f9a21a] focus:ring-offset-2 focus:ring-offset-white md:max-w-sm"
-              href={SUPPORT_TEL_HREF}
+              href={supportTelHref(supportDetails)}
             >
               <PhoneIcon />
               <span>{t("common.callAdmin")}</span>
@@ -103,17 +104,17 @@ export default function ContactPage() {
             <div className="mt-6 flex flex-col gap-4 text-[#6d737c]">
               <a
                 className="flex items-center gap-4 text-[16px] leading-none tracking-normal transition hover:text-[#f9a21a] md:text-[18px]"
-                href={SUPPORT_TEL_HREF}
+                href={supportTelHref(supportDetails)}
               >
                 <PhoneIcon />
-                <span>{SUPPORT_CONTACT.adminPhone}</span>
+                <span>{supportDetails.adminPhone}</span>
               </a>
               <a
                 className="flex items-center gap-4 break-all text-[16px] leading-6 tracking-normal transition hover:text-[#f9a21a] md:text-[18px]"
-                href={SUPPORT_MAIL_HREF}
+                href={supportMailHref(supportDetails)}
               >
                 <MailIcon />
-                <span>{SUPPORT_CONTACT.email}</span>
+                <span>{supportDetails.email}</span>
               </a>
             </div>
           </article>

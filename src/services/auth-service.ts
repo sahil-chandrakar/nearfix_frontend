@@ -7,6 +7,9 @@ import type {
   CustomerProfileUpdatePayload,
   CustomerProviderResult,
   CustomerBanner,
+  CustomerBrand,
+  CustomerBrandService,
+  CustomerBrandStore,
   CustomerRegisterPayload,
   LoginPayload,
   BookingStatus,
@@ -20,6 +23,7 @@ import type {
   RegisterPayload,
   User,
 } from "@/types/auth";
+import type { SupportDetails } from "@/types/support";
 
 export function registerUser(payload: RegisterPayload) {
   return apiFetch<User>("/auth/register", {
@@ -85,6 +89,42 @@ export function getCategories() {
 
 export function getCustomerBanners() {
   return apiFetch<CustomerBanner[]>("/customer/banners");
+}
+
+export function getCustomerBrands() {
+  return apiFetch<CustomerBrand[]>("/customer/brands");
+}
+
+export function getSupportDetails() {
+  return apiFetch<SupportDetails>("/support-details");
+}
+
+export function getCustomerBrandServices(brandSlug: string) {
+  return apiFetch<CustomerBrandService[]>(`/customer/brands/${brandSlug}/services`);
+}
+
+export function getCustomerBrandStores(
+  accessToken: string,
+  brandSlug: string,
+  categorySlug: string,
+  coords?: { lat: number; lng: number } | null,
+) {
+  const params = new URLSearchParams();
+
+  if (coords) {
+    params.set("lat", String(coords.lat));
+    params.set("lng", String(coords.lng));
+  }
+
+  const query = params.toString();
+  return apiFetch<CustomerBrandStore[]>(
+    `/customer/brands/${brandSlug}/services/${categorySlug}/stores${query ? `?${query}` : ""}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
 }
 
 export function getProviderCategories(accessToken: string) {

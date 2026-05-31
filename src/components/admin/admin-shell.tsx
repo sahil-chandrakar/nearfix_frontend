@@ -17,6 +17,8 @@ type AdminNavIcon =
   | "bookings"
   | "banners"
   | "services"
+  | "brands"
+  | "support"
   | "audit";
 
 const navItems = [
@@ -27,6 +29,8 @@ const navItems = [
   { href: "/admin/bookings", icon: "bookings" as const, labelKey: "common.bookings" as const },
   { href: "/admin/banners", icon: "banners" as const, labelKey: "nav.banners" as const },
   { href: "/admin/services", icon: "services" as const, labelKey: "common.services" as const },
+  { href: "/admin/brands", icon: "brands" as const, labelKey: "nav.brandServices" as const },
+  { href: "/admin/support", icon: "support" as const, labelKey: "nav.support" as const },
   { href: "/admin/audit-logs", icon: "audit" as const, labelKey: "nav.audit" as const },
 ];
 
@@ -93,6 +97,17 @@ function AdminIcon({ name }: { name: AdminNavIcon }) {
     );
   }
 
+  if (name === "brands") {
+    return (
+      <svg {...common}>
+        <path d="M4 9h16" />
+        <path d="M5 9l1-4h12l1 4" />
+        <path d="M6 9v10h12V9" />
+        <path d="M9 19v-5h6v5" />
+      </svg>
+    );
+  }
+
   if (name === "audit") {
     return (
       <svg {...common}>
@@ -100,6 +115,17 @@ function AdminIcon({ name }: { name: AdminNavIcon }) {
         <path d="M4 9h16" />
         <path d="M4 14h10" />
         <path d="M4 19h8" />
+      </svg>
+    );
+  }
+
+  if (name === "support") {
+    return (
+      <svg {...common}>
+        <path d="M4 12a8 8 0 0 1 16 0" />
+        <path d="M4 12v4a2 2 0 0 0 2 2h1v-8H6a2 2 0 0 0-2 2Z" />
+        <path d="M20 12v4a2 2 0 0 1-2 2h-1v-8h1a2 2 0 0 1 2 2Z" />
+        <path d="M8 18a4 4 0 0 0 8 0" />
       </svg>
     );
   }

@@ -15,6 +15,7 @@ import { ApiError } from "@/lib/http-client";
 import { categoryLabelBySlug } from "@/lib/localized-labels";
 import { getAdminBookings } from "@/services/admin-service";
 import type { AdminBooking } from "@/types/admin";
+import { BOOKING_NOTIFICATION_EVENT } from "@/types/notifications";
 
 type StatusFilter = "all" | "pending" | "accepted" | "declined";
 
@@ -55,6 +56,21 @@ export default function AdminBookingsPage() {
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, statusFilter]);
+
+  useEffect(() => {
+    function handleBookingNotification() {
+      loadBookings();
+    }
+
+    window.addEventListener(BOOKING_NOTIFICATION_EVENT, handleBookingNotification);
+    return () => {
+      window.removeEventListener(
+        BOOKING_NOTIFICATION_EVENT,
+        handleBookingNotification,
+      );
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, statusFilter, query]);
 
   return (
     <AdminShell>

@@ -1,21 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { CustomerShell } from "@/components/customer/customer-shell";
 import { ServiceIcon } from "@/components/customer/service-icon";
 import { useI18n } from "@/components/i18n/language-provider";
-import { SUPPORT_CONTACT } from "@/config/support";
+import { useSupportDetails } from "@/hooks/use-support-details";
 import { apiUrl } from "@/lib/api-url";
 import { categoryGroupLabel, categoryLabel } from "@/lib/localized-labels";
 import {
-  brandServices,
   homeCategoryGroups,
   personalCareAudiences,
   serviceCategories,
 } from "@/lib/service-categories";
-import { getCategories, getCustomerBanners } from "@/services/auth-service";
+import { getCategories, getCustomerBanners, getCustomerBrands } from "@/services/auth-service";
+import type { CustomerBrand } from "@/types/auth";
 
 type CustomerService = {
   group: string;
@@ -49,7 +49,6 @@ function BrandIcon({ index }: { index: number }) {
     "house-cleaning",
     "car-mechanic",
     "bike-mechanic",
-    "bike-mechanic",
   ];
 
   return (
@@ -67,12 +66,44 @@ const fallbackBanners = [
   },
 ];
 
+const BANNER_STAY_MS = 3000;
+const BANNER_TRANSITION_MS = 500;
+const BANNER_SWIPE_THRESHOLD_PX = 40;
+
+function getBannerTranslateX(element: HTMLElement | null) {
+  if (!element) {
+    return 0;
+  }
+
+  const transform = window.getComputedStyle(element).transform;
+
+  if (!transform || transform === "none") {
+    return 0;
+  }
+
+  const matrix3dValues = transform.match(/^matrix3d\((.+)\)$/)?.[1].split(",");
+  const matrixValues = transform.match(/^matrix\((.+)\)$/)?.[1].split(",");
+  const translateX = matrix3dValues?.[12] ?? matrixValues?.[4];
+
+  return translateX ? Number(translateX.trim()) : 0;
+}
+
 export default function CustomerHomePage() {
   const { language, t } = useI18n();
+  const { supportDetails } = useSupportDetails();
   const [query, setQuery] = useState("");
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
+  const [bannerDragOffset, setBannerDragOffset] = useState(0);
+  const [isBannerDragging, setIsBannerDragging] = useState(false);
+  const activeBannerPointerId = useRef<number | null>(null);
+  const bannerTrackRef = useRef<HTMLDivElement | null>(null);
+  const bannerDragBaseOffset = useRef(0);
+  const bannerDragStartX = useRef(0);
+  const hasStartedBannerAutoplay = useRef(false);
   const [availableCategories, setAvailableCategories] =
     useState<CustomerService[]>(serviceCategories);
+  const [brands, setBrands] = useState<CustomerBrand[]>([]);
+  const [isLoadingBrands, setIsLoadingBrands] = useState(true);
   const [banners, setBanners] = useState(fallbackBanners);
   const normalizedQuery = query.trim().toLowerCase();
   const filteredCategories = useMemo(() => {
@@ -114,22 +145,110 @@ export default function CustomerHomePage() {
         // Local banners remain as a safe fallback.
       });
 
+    getCustomerBrands()
+      .then((nextBrands) => {
+        if (isMounted) {
+          setBrands(nextBrands);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setBrands([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingBrands(false);
+        }
+      });
+
     return () => {
       isMounted = false;
     };
   }, []);
 
   useEffect(() => {
-    if (banners.length <= 1) {
+    if (banners.length <= 1 || isBannerDragging) {
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      setActiveBannerIndex((currentIndex) => (currentIndex + 1) % banners.length);
-    }, 1500);
+    const delay = hasStartedBannerAutoplay.current
+      ? BANNER_STAY_MS + BANNER_TRANSITION_MS
+      : BANNER_STAY_MS;
+    hasStartedBannerAutoplay.current = true;
 
-    return () => window.clearInterval(intervalId);
-  }, [banners.length]);
+    const timeoutId = window.setTimeout(() => {
+      setActiveBannerIndex((currentIndex) => (currentIndex + 1) % banners.length);
+    }, delay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeBannerIndex, banners.length, isBannerDragging]);
+
+  function moveToPreviousBanner() {
+    setActiveBannerIndex((currentIndex) =>
+      currentIndex === 0 ? banners.length - 1 : currentIndex - 1,
+    );
+  }
+
+  function moveToNextBanner() {
+    setActiveBannerIndex((currentIndex) => (currentIndex + 1) % banners.length);
+  }
+
+  function handleBannerPointerDown(event: React.PointerEvent<HTMLElement>) {
+    if (banners.length <= 1 || !event.isPrimary) {
+      return;
+    }
+
+    activeBannerPointerId.current = event.pointerId;
+    bannerDragBaseOffset.current =
+      getBannerTranslateX(bannerTrackRef.current) +
+      activeBannerIndex * event.currentTarget.clientWidth;
+    bannerDragStartX.current = event.clientX;
+    setBannerDragOffset(bannerDragBaseOffset.current);
+    setIsBannerDragging(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleBannerPointerMove(event: React.PointerEvent<HTMLElement>) {
+    if (
+      !isBannerDragging ||
+      activeBannerPointerId.current !== event.pointerId
+    ) {
+      return;
+    }
+
+    setBannerDragOffset(
+      bannerDragBaseOffset.current + event.clientX - bannerDragStartX.current,
+    );
+  }
+
+  function finishBannerDrag(event: React.PointerEvent<HTMLElement>) {
+    if (
+      !isBannerDragging ||
+      activeBannerPointerId.current !== event.pointerId
+    ) {
+      return;
+    }
+
+    const dragDistance = event.clientX - bannerDragStartX.current;
+
+    if (Math.abs(dragDistance) >= BANNER_SWIPE_THRESHOLD_PX) {
+      if (dragDistance < 0) {
+        moveToNextBanner();
+      } else {
+        moveToPreviousBanner();
+      }
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    activeBannerPointerId.current = null;
+    bannerDragBaseOffset.current = 0;
+    setBannerDragOffset(0);
+    setIsBannerDragging(false);
+  }
 
   return (
     <CustomerShell>
@@ -148,10 +267,21 @@ export default function CustomerHomePage() {
         <section
           aria-label="Featured services"
           className="mt-7 overflow-hidden rounded-2xl bg-slate-700 shadow-[0_2px_8px_rgba(15,23,42,0.12)]"
+          onPointerCancel={finishBannerDrag}
+          onPointerDown={handleBannerPointerDown}
+          onPointerMove={handleBannerPointerMove}
+          onPointerUp={finishBannerDrag}
+          style={{ touchAction: "pan-y" }}
         >
           <div
-            className="flex transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(-${activeBannerIndex * 100}%)` }}
+            className={`flex select-none ${isBannerDragging ? "cursor-grabbing" : "cursor-grab"}`}
+            ref={bannerTrackRef}
+            style={{
+              transform: `translateX(calc(-${activeBannerIndex * 100}% + ${bannerDragOffset}px))`,
+              transition: isBannerDragging
+                ? "none"
+                : `transform ${BANNER_TRANSITION_MS}ms ease-out`,
+            }}
           >
             {banners.map((banner, index) => (
               <div
@@ -160,11 +290,13 @@ export default function CustomerHomePage() {
               >
                 <Image
                   alt={banner.alt}
-                  className="object-cover"
+                  className="pointer-events-none object-cover"
+                  draggable={false}
                   fill
                   priority={index === 0}
                   sizes="(min-width: 768px) 880px, (min-width: 640px) 536px, 492px"
                   src={banner.src}
+                  unoptimized
                 />
               </div>
             ))}
@@ -277,24 +409,35 @@ export default function CustomerHomePage() {
             {t("customer.allBrandServices")}
           </h1>
           <div className="mt-7 flex flex-col gap-4 sm:gap-5">
-            {brandServices.map((service, index) => (
-              <div
-                className="flex min-h-[84px] items-center gap-5 rounded-xl border border-[#e7ecef] bg-white px-5 py-4 shadow-[0_2px_10px_rgba(15,23,42,0.07)] sm:min-h-[94px] sm:gap-6"
-                key={`${service}-${index}`}
-              >
-                <BrandIcon index={index} />
-                <p className="text-[16px] font-normal leading-6 tracking-normal text-[#34383d] sm:text-[18px] md:text-[20px] md:leading-7">
-                  {service}
-                </p>
-              </div>
-            ))}
+            {isLoadingBrands ? (
+              <p className="text-[16px] leading-7 tracking-normal text-[#6d737c]">
+                {t("common.loading")}
+              </p>
+            ) : brands.length === 0 ? (
+              <p className="text-[16px] leading-7 tracking-normal text-[#6d737c]">
+                {t("customer.noServicesFound")}
+              </p>
+            ) : (
+              brands.map((brand, index) => (
+                <Link
+                  className="flex min-h-[84px] items-center gap-5 rounded-xl border border-[#e7ecef] bg-white px-5 py-4 text-[#34383d] shadow-[0_2px_10px_rgba(15,23,42,0.07)] transition hover:border-[#f9a21a] hover:text-[#f9a21a] sm:min-h-[94px] sm:gap-6"
+                  href={`/customer/brands/${brand.slug}`}
+                  key={brand.id}
+                >
+                  <BrandIcon index={index} />
+                  <p className="text-[16px] font-normal leading-6 tracking-normal sm:text-[18px] md:text-[20px] md:leading-7">
+                    {brand.name}
+                  </p>
+                </Link>
+              ))
+            )}
           </div>
         </section>
 
         <footer className="py-10 text-center text-[16px] leading-8 tracking-normal text-[#b6bdc5] sm:py-12 sm:text-[18px]">
-          <p>Nearfix.in</p>
-          <p className="mt-5">{language === "hi" ? "हेल्पलाइन" : "Helpline"}: {SUPPORT_CONTACT.adminPhone}</p>
-          <p>{t("common.email")}: {SUPPORT_CONTACT.email}</p>
+          <p>{supportDetails.footerSiteName}</p>
+          <p className="mt-5">{language === "hi" ? "हेल्पलाइन" : "Helpline"}: {supportDetails.adminPhone}</p>
+          <p>{t("common.email")}: {supportDetails.email}</p>
         </footer>
       </div>
     </CustomerShell>

@@ -99,6 +99,48 @@ export type CustomerBanner = {
   updatedAt: string;
 };
 
+export type CustomerBrand = {
+  id: number;
+  slug: string;
+  name: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CustomerBrandService = {
+  id: number;
+  brandId: number;
+  categorySlug: string;
+  label: string;
+  labelHi: string;
+  group: string;
+  groupHi: string;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CustomerBrandStore = {
+  id: number;
+  brandServiceId: number;
+  storeType: "provider" | "manual";
+  providerProfileId: number | null;
+  shopName: string;
+  contactName: string;
+  phone: string;
+  email: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  isActive: boolean;
+  displayOrder: number;
+  distanceKm: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type BookingStatus = "pending" | "accepted" | "declined";
 
 export type Booking = {
