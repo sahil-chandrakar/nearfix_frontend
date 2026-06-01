@@ -21,6 +21,7 @@ type UserRole = User["role"];
 type ToastState = {
   body: string;
   href: string;
+  id: number;
   title: string;
 };
 
@@ -246,14 +247,16 @@ export function BookingNotificationCenter() {
       const nextToast = {
         ...copy,
         href: routeForNotification(payload, activeRole),
+        id: Date.now(),
       };
 
-      if (isBookingNotificationPayload(payload)) {
-        dispatchBookingNotification(payload);
-      }
-      playNotificationSound();
       setToast(nextToast);
       showBrowserNotification(nextToast);
+
+      if (isBookingNotificationPayload(payload)) {
+        window.setTimeout(() => dispatchBookingNotification(payload), 0);
+      }
+      playNotificationSound();
     }
 
     function openSocket() {
@@ -372,7 +375,12 @@ export function BookingNotificationCenter() {
       ) : null}
 
       {toast ? (
-        <div className="fixed left-4 right-4 top-24 z-40 mx-auto max-w-[460px] rounded-xl border border-[#f3d99b] bg-white px-5 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.18)]">
+        <div
+          className="fixed left-4 right-4 top-24 z-[60] mx-auto max-w-[460px] rounded-xl border border-[#f3d99b] bg-white px-5 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.18)]"
+          data-testid="booking-notification-toast"
+          key={toast.id}
+          role="status"
+        >
           <div className="flex items-start justify-between gap-3">
             <button
               className="min-w-0 flex-1 text-left"
